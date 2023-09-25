@@ -1,0 +1,43 @@
+name: merge
+
+on:
+  schedule:
+    - cron: '30 0 * * *'
+
+jobs:
+  merge-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-python@v4.1.0
+        with:
+          python-version: 3.7
+      - name: clone
+        run: |
+          git clone https://${{secrets.TOKEN}}@github.com/xiaoxiao29/WxJava.git ./
+          git remote add upstream https://github.com/Wechat-Group/WxJava.git
+      - name: git-push
+        run: |
+          git config --global user.email "autorobot@wofunz.top"
+          git config --global user.name "github-action-robot"
+          git fetch upstream
+          git checkout upstream/release
+          git pull --no-edit
+          git push -f origin/release
+  merge-develop:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-python@v4.1.0
+        with:
+          python-version: 3.7
+      - name: clone
+        run: |
+          git clone https://${{secrets.TOKEN}}@github.com/xiaoxiao29/WxJava.git ./
+          git remote add upstream https://github.com/Wechat-Group/WxJava.git
+      - name: git-push
+        run: |
+          git config --global user.email "autorobot@wofunz.top"
+          git config --global user.name "github-action-robot"
+          git fetch upstream
+          git checkout upstream/develop
+          git pull --no-edit
+          git push -f origin/develop
