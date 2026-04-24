@@ -11,7 +11,7 @@ import com.github.binarywang.wxpay.bean.result.*;
 import com.github.binarywang.wxpay.bean.result.enums.TradeTypeEnum;
 import com.github.binarywang.wxpay.config.WxPayConfig;
 import com.github.binarywang.wxpay.constant.WxPayConstants;
-import com.github.binarywang.wxpay.constant.WxPayConstants.AccountType;
+import com.github.binarywang.wxpay.bean.request.WxPayDownloadFundFlowRequest.AccountType;
 import com.github.binarywang.wxpay.constant.WxPayConstants.BillType;
 import com.github.binarywang.wxpay.constant.WxPayConstants.SignType;
 import com.github.binarywang.wxpay.constant.WxPayConstants.TradeType;
@@ -33,11 +33,13 @@ import org.testng.annotations.Test;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Optional;
+import java.util.UUID;
 
 import static com.github.binarywang.wxpay.constant.WxPayConstants.TarType;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -157,16 +159,16 @@ public class BaseWxPayServiceImplTest {
     // Won't compile
     // WxPayMpOrderResult result = payService.createOrder(TradeType.Specific.APP, new WxPayUnifiedOrderRequest());
     payService.createOrder(
-      TradeType.Specific.JSAPI,
-      WxPayUnifiedOrderRequest.newBuilder()
-        .body("我去")
-        .totalFee(1)
-        .productId("aaa")
-        .spbillCreateIp("11.1.11.1")
-        .notifyUrl("111111")
-        .outTradeNo("111111290")
-        .build()
-    )
+        TradeType.Specific.JSAPI,
+        WxPayUnifiedOrderRequest.newBuilder()
+          .body("我去")
+          .totalFee(1)
+          .productId("aaa")
+          .spbillCreateIp("11.1.11.1")
+          .notifyUrl("111111")
+          .outTradeNo("111111290")
+          .build()
+      )
       .getAppId();
   }
 
@@ -626,6 +628,42 @@ public class BaseWxPayServiceImplTest {
   }
 
   /**
+   * Test parse order notify result with JSON format should give helpful error.
+   * 测试当传入V3版本的JSON格式通知数据时，应该抛出清晰的错误提示
+   *
+   * @throws Exception the exception
+   */
+  @Test
+  public void testParseOrderNotifyResultWithJsonShouldGiveHelpfulError() throws Exception {
+    String jsonString = "{\n" +
+      "    \"id\": \"EV-2018022511223320873\",\n" +
+      "    \"create_time\": \"2015-05-20T13:29:35+08:00\",\n" +
+      "    \"resource_type\": \"encrypt-resource\",\n" +
+      "    \"event_type\": \"TRANSACTION.SUCCESS\",\n" +
+      "    \"summary\": \"支付成功\",\n" +
+      "    \"resource\": {\n" +
+      "        \"algorithm\": \"AEAD_AES_256_GCM\",\n" +
+      "        \"ciphertext\": \"test\",\n" +
+      "        \"associated_data\": \"transaction\",\n" +
+      "        \"nonce\": \"test\"\n" +
+      "    }\n" +
+      "}";
+
+    try {
+      this.payService.parseOrderNotifyResult(jsonString);
+      fail("Expected WxPayException for JSON input");
+    } catch (WxPayException e) {
+      // 验证错误消息包含V3版本和parseOrderNotifyV3Result方法的指导信息
+      String message = e.getMessage();
+      assertTrue(message.contains("V3版本"), "错误消息应包含'V3版本'");
+      assertTrue(message.contains("JSON格式"), "错误消息应包含'JSON格式'");
+      assertTrue(message.contains("parseOrderNotifyV3Result"), "错误消息应包含'parseOrderNotifyV3Result'方法名");
+      assertTrue(message.contains("SignatureHeader"), "错误消息应包含'SignatureHeader'");
+      log.info("JSON格式检测正常，错误提示: {}", message);
+    }
+  }
+
+  /**
    * Test get wx api data.
    *
    * @throws Exception the exception
@@ -796,7 +834,7 @@ public class BaseWxPayServiceImplTest {
     log.info("请求头参数为：timestamp:{} nonce:{} serialNo:{} signature:{}", timestamp, nonce, serialNo, signature);
 
     // V2版本请参考com.github.binarywang.wxpay.bean.notify.WxPayRefundNotifyResultTest里的单元测试
-    final WxPayOrderNotifyV3Result wxPayOrderNotifyV3Result = this.payService.parseOrderNotifyV3Result(RequestUtils.readData(request),
+    final WxPayNotifyV3Result wxPayOrderNotifyV3Result = this.payService.parseOrderNotifyV3Result(RequestUtils.readData(request),
       new SignatureHeader(timestamp, nonce, signature, serialNo));
     log.info(GSON.toJson(wxPayOrderNotifyV3Result));
 
@@ -840,6 +878,75 @@ public class BaseWxPayServiceImplTest {
     return WxPayNotifyV3Response.success("成功");
   }
 
+  /**
+   * 商家转账批次回调通知
+   * https://pay.weixin.qq.com/docs/merchant/apis/batch-transfer-to-balance/transfer-batch-callback-notice.html
+   *
+   * @return
+   * @throws Exception
+   */
+  @Test
+  public String parseTransferBatchesNotifyV3Result() throws Exception {
+
+    String body = "{\n" +
+      "    \"id\": \"1c8192d8-aba1-5898-a79c-7d3abb72eabe\",\n" +
+      "    \"create_time\": \"2023-08-16T16:43:27+08:00\",\n" +
+      "    \"resource_type\": \"encrypt-resource\",\n" +
+      "    \"event_type\": \"MCHTRANSFER.BATCH.FINISHED\",\n" +
+      "    \"summary\": \"商家转账批次完成通知\",\n" +
+      "    \"resource\": {\n" +
+      "        \"original_type\": \"mch_payment\",\n" +
+      "        \"algorithm\": \"AEAD_AES_256_GCM\",\n" +
+      "        \"ciphertext\": \"zTBf6DDPzZSoIBkoLFkC+ho97QrqnT6UU/ADM0tJP07ITaFPek4vofQjmclLUof78NqrPcJs5OIBl+gnKKJ4xCxcDmDnZZHvev5o1pk4gwtJIFIDxbq3piDr4Wq6cZpvGPPQTYC8YoVRTdVeeN+EcuklRrmaFzv8wCTSdI9wFJ9bsxtLedhq4gpkKqN5fbSguQg9JFsX3OJeT7KPfRd6SD1gu4Lpw5gwxthfOHcYsjM/eY5gaew8zzpN6mMUEJ1HqkNuQgOguHBxFnqFPiMz+Iadw7X38Yz+IgfUkOhN1iuvMhGYKbwKJ7rTiBVvGGpF6Wse1zFKgSiTLH2RnUAMkkHmxqk+JhbQKZpSWr6O8BfhHO1OKg7hpcHZtOJKNMjIF62WYDVf36w1h8h5fg==\",\n" +
+      "        \"associated_data\": \"mch_payment\",\n" +
+      "        \"nonce\": \"DdF3UJVNQaKT\"\n" +
+      "    }\n" +
+      "}";
+    WxPayTransferBatchesNotifyV3Result transferBatchesNotifyV3Body = GSON.fromJson(body, WxPayTransferBatchesNotifyV3Result.class);
+    log.info(GSON.toJson(transferBatchesNotifyV3Body));
+
+    // 处理业务逻辑 ...
+
+    return WxPayNotifyV3Response.success("成功");
+  }
+
+  // 测试
+  public static void main(String[] args){
+    String body = "{\n" +
+      "    \"id\": \"1c8192d8-aba1-5898-a79c-7d3abb72eabe\",\n" +
+      "    \"create_time\": \"2023-08-16T16:43:27+08:00\",\n" +
+      "    \"resource_type\": \"encrypt-resource\",\n" +
+      "    \"event_type\": \"MCHTRANSFER.BATCH.FINISHED\",\n" +
+      "    \"summary\": \"商家转账批次完成通知\",\n" +
+      "    \"resource\": {\n" +
+      "        \"original_type\": \"mch_payment\",\n" +
+      "        \"algorithm\": \"AEAD_AES_256_GCM\",\n" +
+      "        \"ciphertext\": \"zTBf6DDPzZSoIBkoLFkC+ho97QrqnT6UU/ADM0tJP07ITaFPek4vofQjmclLUof78NqrPcJs5OIBl+gnKKJ4xCxcDmDnZZHvev5o1pk4gwtJIFIDxbq3piDr4Wq6cZpvGPPQTYC8YoVRTdVeeN+EcuklRrmaFzv8wCTSdI9wFJ9bsxtLedhq4gpkKqN5fbSguQg9JFsX3OJeT7KPfRd6SD1gu4Lpw5gwxthfOHcYsjM/eY5gaew8zzpN6mMUEJ1HqkNuQgOguHBxFnqFPiMz+Iadw7X38Yz+IgfUkOhN1iuvMhGYKbwKJ7rTiBVvGGpF6Wse1zFKgSiTLH2RnUAMkkHmxqk+JhbQKZpSWr6O8BfhHO1OKg7hpcHZtOJKNMjIF62WYDVf36w1h8h5fg==\",\n" +
+      "        \"associated_data\": \"mch_payment\",\n" +
+      "        \"nonce\": \"DdF3UJVNQaKT\"\n" +
+      "    }\n" +
+      "}";
+    OriginNotifyResponse transferBatchesNotifyV3Body = GSON.fromJson(body, OriginNotifyResponse.class);
+    log.info(GSON.toJson(transferBatchesNotifyV3Body));
+
+    String decryptNotifyResult = "{\n" +
+      "    \"out_batch_no\": \"bfatestnotify000033\",\n" +
+      "    \"batch_id\": \"131000007026709999520922023081519403795655\",\n" +
+      "    \"batch_status\": \"FINISHED\",\n" +
+      "    \"total_num\": 2,\n" +
+      "    \"total_amount\": 200,\n" +
+      "    \"success_amount\": 100,\n" +
+      "    \"success_num\": 1,\n" +
+      "    \"fail_amount\": 100,\n" +
+      "    \"fail_num\": 1,\n" +
+      "    \"mchid\": \"2483775951\",\n" +
+      "    \"update_time\": \"2023-08-15T20:33:22+08:00\"\n" +
+      "}";
+    WxPayTransferBatchesNotifyV3Result.DecryptNotifyResult notifyResult = GSON.fromJson(decryptNotifyResult, WxPayTransferBatchesNotifyV3Result.DecryptNotifyResult.class);
+    log.info(GSON.toJson(notifyResult));
+
+  }
+
   @Test
   public void testWxPayNotifyV3Response() {
     System.out.println(WxPayNotifyV3Response.success("success"));
@@ -866,7 +973,7 @@ public class BaseWxPayServiceImplTest {
       WxPayOrderQueryV3Request request = new WxPayOrderQueryV3Request();
       request.setOutTradeNo("n1ZvYqjAg3D3LUBa");
       WxPayConfig config = this.payService.getConfig();
-      config.setPayBaseUrl("http://api.mch.weixin.qq.com");
+      config.setApiHostUrl("http://api.mch.weixin.qq.com");
       config.setHttpProxyHost("12.11.1.113");
       config.setHttpProxyPort(8015);
       WxPayOrderQueryV3Result result = this.payService.queryOrderV3(request);
@@ -874,6 +981,76 @@ public class BaseWxPayServiceImplTest {
     } catch (WxPayException e) {
     }
 
+  }
+
+  @Test
+  public void testCreatePartnerOrderV3() throws WxPayException {
+    WxPayConfig wxPayConfig = new WxPayConfig();
+    //服务商的参数
+    wxPayConfig.setMchId("xxx");
+    wxPayConfig.setApiV3Key("xxx");
+    wxPayConfig.setPrivateKeyPath("xxx");
+    wxPayConfig.setPrivateCertPath("xxx");
+    wxPayConfig.setKeyPath("xxx");
+    wxPayConfig.setAppId("xxx");
+    wxPayConfig.setKeyPath("xxx");
+    //如果有子商户的appId则配置
+//    wxPayConfig.setSubAppId("xxx");
+    //创建支付服务
+    WxPayService wxPayService = new WxPayServiceImpl();
+    wxPayService.setConfig(wxPayConfig);
+    //子商户的参数
+    wxPayConfig.setSubMchId("xxx");
+
+    //构建请求
+    WxPayPartnerUnifiedOrderV3Request request = new WxPayPartnerUnifiedOrderV3Request();
+    request.setAmount(new WxPayPartnerUnifiedOrderV3Request.Amount().setTotal(1));
+    request.setPayer(new WxPayPartnerUnifiedOrderV3Request.Payer().setSpOpenid("xxx"));
+    //如果有子商户的appId则配置
+//    request.setPayer(new WxPayPartnerUnifiedOrderV3Request.Payer().setSubOpenid("xxx"));
+    request.setOutTradeNo(UUID.randomUUID().toString());
+
+    WxPayUnifiedOrderV3Result.JsapiResult result = payService.createPartnerOrderV3(TradeTypeEnum.JSAPI, request);
+    System.out.println(result);
+  }
+
+  @Test
+  public void test_certSerialNoExtractedFromPrivateCertContentOrPrivateCertString() throws Exception {
+    WxPayConfig wxPayConfig = new WxPayConfig();
+    //服务商的参数
+    wxPayConfig.setMchId("xxx");
+    wxPayConfig.setAppId("xxx");
+    wxPayConfig.setApiV3Key("xxx");
+    wxPayConfig.setPrivateKeyContent("xxx".getBytes(StandardCharsets.UTF_8));
+    wxPayConfig.setPrivateCertContent("xxx".getBytes(StandardCharsets.UTF_8)
+    );
+    wxPayConfig.setPublicKeyId("xxx");
+    wxPayConfig.setPublicKeyContent("xxx".getBytes(StandardCharsets.UTF_8));
+    //创建支付服务
+    WxPayService wxPayService = new WxPayServiceImpl();
+    wxPayService.setConfig(wxPayConfig);
+
+    String outTradeNo = RandomUtils.getRandomStr();
+    String notifyUrl = "https://api.qq.com/";
+    System.out.println("outTradeNo = " + outTradeNo);
+    WxPayUnifiedOrderV3Request request = new WxPayUnifiedOrderV3Request();
+    request.setOutTradeNo(outTradeNo);
+    request.setNotifyUrl(notifyUrl);
+    request.setDescription("test");
+
+    WxPayUnifiedOrderV3Request.Payer payer = new WxPayUnifiedOrderV3Request.Payer();
+    payer.setOpenid("xxx");
+    request.setPayer(payer);
+
+    //构建金额信息
+    WxPayUnifiedOrderV3Request.Amount amount = new WxPayUnifiedOrderV3Request.Amount();
+    //设置币种信息
+    amount.setCurrency(WxPayConstants.CurrencyType.CNY);
+    //设置金额
+    amount.setTotal(BaseWxPayRequest.yuan2Fen(BigDecimal.ONE));
+    request.setAmount(amount);
+
+    wxPayService.createOrderV3(TradeTypeEnum.JSAPI, request);
   }
 
 }

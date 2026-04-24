@@ -1,5 +1,7 @@
 package me.chanjar.weixin.common.api;
 
+import lombok.experimental.UtilityClass;
+
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -12,6 +14,7 @@ import static me.chanjar.weixin.common.error.WxMpErrorMsgEnum.*;
  *
  * @author Daniel Qian & binarywang & Wang_Wong
  */
+@UtilityClass
 public class WxConsts {
   /**
    * access_token 相关错误代码
@@ -26,8 +29,14 @@ public class WxConsts {
     CODE_40014.getCode(), CODE_42001.getCode());
 
   /**
+   * 微信接口返回的参数errcode.
+   */
+  public static final String ERR_CODE = "errcode";
+
+  /**
    * 微信推送过来的消息的类型，和发送给微信xml格式消息的消息类型.
    */
+  @UtilityClass
   public static class XmlMsgType {
     public static final String TEXT = "text";
     public static final String IMAGE = "image";
@@ -51,6 +60,7 @@ public class WxConsts {
   /**
    * 主动发送消息(即客服消息)的消息类型.
    */
+  @UtilityClass
   public static class KefuMsgType {
     /**
      * 文本消息.
@@ -137,6 +147,7 @@ public class WxConsts {
    * 发送「学校通知」类型
    * https://developer.work.weixin.qq.com/document/path/92321
    */
+  @UtilityClass
   public static class SchoolContactMsgType {
 
     /**
@@ -184,6 +195,7 @@ public class WxConsts {
   /**
    * 企业微信模板卡片消息的卡片类型
    */
+  @UtilityClass
   public static class TemplateCardType {
     /**
      * 文本通知型卡片
@@ -210,6 +222,7 @@ public class WxConsts {
   /**
    * 表示是否是保密消息，0表示否，1表示是，默认0.
    */
+  @UtilityClass
   public static class KefuMsgSafe {
     public static final String NO = "0";
     public static final String YES = "1";
@@ -218,6 +231,7 @@ public class WxConsts {
   /**
    * 群发消息的消息类型.
    */
+  @UtilityClass
   public static class MassMsgType {
     public static final String MPNEWS = "mpnews";
     public static final String TEXT = "text";
@@ -230,6 +244,7 @@ public class WxConsts {
   /**
    * 群发消息后微信端推送给服务器的反馈消息.
    */
+  @UtilityClass
   public static class MassMsgStatus {
     public static final String SEND_SUCCESS = "send success";
     public static final String SEND_FAIL = "send fail";
@@ -277,6 +292,7 @@ public class WxConsts {
   /**
    * 微信端推送过来的事件类型.
    */
+  @UtilityClass
   public static class EventType {
     public static final String SUBSCRIBE = "subscribe";
     public static final String UNSUBSCRIBE = "unsubscribe";
@@ -285,6 +301,8 @@ public class WxConsts {
     public static final String CLICK = "CLICK";
     public static final String VIEW = "VIEW";
     public static final String MASS_SEND_JOB_FINISH = "MASSSENDJOBFINISH";
+
+    public static final String SYS_APPROVAL_CHANGE = "sys_approval_change";
     /**
      * 扫码推事件的事件推送
      */
@@ -414,10 +432,16 @@ public class WxConsts {
      */
     public static final String WEAPP_AUDIT_FAIL = "weapp_audit_fail";
 
+
+    /**
+     * 小程序审核事件：审核延后
+     */
+    public static final String WEAPP_AUDIT_DELAY = "weapp_audit_delay";
+
     /**
      * 小程序自定义交易组件支付通知
      */
-    public static final  String OPEN_PRODUCT_ORDER_PAY = "open_product_order_pay";
+    public static final String OPEN_PRODUCT_ORDER_PAY = "open_product_order_pay";
     /**
      * 点击菜单跳转小程序的事件推送
      */
@@ -437,6 +461,43 @@ public class WxConsts {
      * 订阅通知事件：发送订阅通知回调
      */
     public static final String SUBSCRIBE_MSG_SENT_EVENT = "subscribe_msg_sent_event";
+
+    /**
+     * 名称审核事件
+     */
+    public static final String WXA_NICKNAME_AUDIT = "wxa_nickname_audit";
+    /**
+     * 小程序违规记录事件
+     */
+    public static final String WXA_ILLEGAL_RECORD = "wxa_illegal_record";
+    /**
+     * 小程序申诉记录推送
+     */
+    public static final String WXA_APPEAL_RECORD = "wxa_appeal_record";
+    /**
+     * 隐私权限审核结果推送
+     */
+    public static final String WXA_PRIVACY_APPLY = "wxa_privacy_apply";
+    /**
+     * 类目审核结果事件推送
+     */
+    public static final String WXA_CATEGORY_AUDIT = "wxa_category_audit";
+    /**
+     * 小程序微信认证支付成功事件
+     */
+    public static final String WX_VERIFY_PAY_SUCC = "wx_verify_pay_succ";
+    /**
+     * 小程序微信认证派单事件
+     */
+    public static final String WX_VERIFY_DISPATCH = "wx_verify_dispatch";
+    /**
+     * 提醒需要上传发货信息事件：曾经发过货的小程序，订单超过48小时未发货时
+     */
+    public static final String TRADE_MANAGE_REMIND_SHIPPING = "trade_manage_remind_shipping";
+    /**
+     * 订单完成发货时、订单结算时
+     */
+    public static final String TRADE_MANAGE_ORDER_SETTLEMENT = "trade_manage_order_settlement";
   }
 
   /**
@@ -453,6 +514,7 @@ public class WxConsts {
   /**
    * 自定义菜单的按钮类型.
    */
+  @UtilityClass
   public static class MenuButtonType {
     /**
      * 点击推事件.
@@ -503,6 +565,7 @@ public class WxConsts {
   /**
    * oauth2网页授权的scope.
    */
+  @UtilityClass
   public static class OAuth2Scope {
     /**
      * 不弹出授权页面，直接跳转，只能获取用户openid.
@@ -523,6 +586,7 @@ public class WxConsts {
   /**
    * 网页应用登录授权作用域.
    */
+  @UtilityClass
   public static class QrConnectScope {
     public static final String SNSAPI_LOGIN = "snsapi_login";
   }
@@ -530,6 +594,7 @@ public class WxConsts {
   /**
    * 永久素材类型.
    */
+  @UtilityClass
   public static class MaterialType {
     public static final String NEWS = "news";
     public static final String VOICE = "voice";
@@ -541,6 +606,7 @@ public class WxConsts {
   /**
    * 网络检测入参.
    */
+  @UtilityClass
   public static class NetCheckArgs {
     public static final String ACTIONDNS = "dns";
     public static final String ACTIONPING = "ping";
@@ -554,6 +620,7 @@ public class WxConsts {
   /**
    * appId 类型
    */
+  @UtilityClass
   public static class AppIdType {
     /**
      * 公众号appId类型
@@ -563,5 +630,20 @@ public class WxConsts {
      * 小程序appId类型
      */
     public static final String MINI_TYPE = "mini";
+  }
+
+  /**
+   * 新建文章类型
+   */
+  @UtilityClass
+  public static class ArticleType {
+    /**
+     * 图文消息
+     */
+    public static final String NEWS = "news";
+    /**
+     * 图片消息
+     */
+    public static final String NEWS_PIC = "newspic";
   }
 }

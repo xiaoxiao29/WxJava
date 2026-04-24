@@ -7,30 +7,31 @@ import com.github.binarywang.wxpay.bean.ecommerce.enums.TradeTypeEnum;
 import com.github.binarywang.wxpay.exception.WxPayException;
 import com.github.binarywang.wxpay.service.EcommerceService;
 import com.github.binarywang.wxpay.service.WxPayService;
+import com.github.binarywang.wxpay.v3.WechatPayUploadHttpPost;
 import com.github.binarywang.wxpay.v3.util.AesUtils;
 import com.github.binarywang.wxpay.v3.util.RsaCryptoUtil;
 import com.google.common.base.CaseFormat;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.beans.BeanInfo;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.text.DateFormat;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.LinkedHashMap;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 @RequiredArgsConstructor
 public class EcommerceServiceImpl implements EcommerceService {
@@ -189,6 +190,16 @@ public class EcommerceServiceImpl implements EcommerceService {
   }
 
   @Override
+  public FundBalanceResult subNowBalance(String subMchid, SpAccountTypeEnum accountType) throws WxPayException {
+    String url = String.format("%s/v3/ecommerce/fund/balance/%s", this.payService.getPayBaseUrl(), subMchid);
+    if (Objects.nonNull(accountType)) {
+      url += "?account_type=" + accountType.getValue();
+    }
+    String response = this.payService.getV3(url);
+    return GSON.fromJson(response, FundBalanceResult.class);
+  }
+
+  @Override
   public FundBalanceResult subDayEndBalance(String subMchid, String date) throws WxPayException {
     String url = String.format("%s/v3/ecommerce/fund/enddaybalance/%s?date=%s", this.payService.getPayBaseUrl(), subMchid, date);
     String response = this.payService.getV3(url);
@@ -279,6 +290,25 @@ public class EcommerceServiceImpl implements EcommerceService {
     return GSON.fromJson(response, RefundQueryResult.class);
   }
 
+
+  @Override
+  public ReturnAdvanceResult refundsReturnAdvance(String subMchid, String refundId) throws WxPayException {
+    String url = String.format("%s/v3/ecommerce/refunds/%s/return-advance", this.payService.getPayBaseUrl(), refundId);
+    Map<String, String> request = new HashMap<>();
+    request.put("sub_mchid",subMchid);
+    String response = this.payService.postV3(url, GSON.toJson(request));
+    return GSON.fromJson(response, ReturnAdvanceResult.class);
+  }
+
+
+  @Override
+  public ReturnAdvanceResult queryRefundsReturnAdvance(String subMchid, String refundId) throws WxPayException {
+    String url = String.format("%s/v3/ecommerce/refunds/%s/return-advance?sub_mchid=%s", this.payService.getPayBaseUrl(), refundId,subMchid);
+    String response = this.payService.getV3(url);
+    return GSON.fromJson(response, ReturnAdvanceResult.class);
+  }
+
+
   @Override
   public RefundQueryResult queryRefundByOutRefundNo(String subMchid, String outRefundNo) throws WxPayException {
     String url = String.format("%s/v3/ecommerce/refunds/out-refund-no/%s?sub_mchid=%s", this.payService.getPayBaseUrl(), outRefundNo, subMchid);
@@ -300,6 +330,27 @@ public class EcommerceServiceImpl implements EcommerceService {
     try {
       String result = AesUtils.decryptToString(associatedData, nonce, cipherText, apiV3Key);
       RefundNotifyResult notifyResult = GSON.fromJson(result, RefundNotifyResult.class);
+      notifyResult.setRawData(response);
+      return notifyResult;
+    } catch (GeneralSecurityException | IOException e) {
+      throw new WxPayException("解析报文异常！", e);
+    }
+  }
+
+  @Override
+  public WithdrawNotifyResult parseWithdrawNotifyResult(String notifyData, SignatureHeader header) throws WxPayException {
+    if (Objects.nonNull(header) && !this.verifyNotifySign(header, notifyData)) {
+      throw new WxPayException("非法请求，头部信息验证失败");
+    }
+    NotifyResponse response = GSON.fromJson(notifyData, NotifyResponse.class);
+    NotifyResponse.Resource resource = response.getResource();
+    String cipherText = resource.getCiphertext();
+    String associatedData = resource.getAssociatedData();
+    String nonce = resource.getNonce();
+    String apiV3Key = this.payService.getConfig().getApiV3Key();
+    try {
+      String result = AesUtils.decryptToString(associatedData, nonce, cipherText, apiV3Key);
+      WithdrawNotifyResult notifyResult = GSON.fromJson(result, WithdrawNotifyResult.class);
       notifyResult.setRawData(response);
       return notifyResult;
     } catch (GeneralSecurityException | IOException e) {
@@ -336,6 +387,27 @@ public class EcommerceServiceImpl implements EcommerceService {
   }
 
   @Override
+  public SpWithdrawStatusResult querySpWithdrawByWithdrawId(String withdrawId) throws WxPayException {
+    String url = String.format("%s/v3/merchant/fund/withdraw/withdraw-id/%s", this.payService.getPayBaseUrl(), withdrawId);
+    String response = this.payService.getV3(url);
+    return GSON.fromJson(response, SpWithdrawStatusResult.class);
+  }
+
+  @Override
+  public SubDayEndBalanceWithdrawResult subDayEndBalanceWithdraw(SubDayEndBalanceWithdrawRequest request) throws WxPayException {
+    String url = String.format("%s/v3/ecommerce/fund/balance-withdraw", this.payService.getPayBaseUrl());
+    String response = this.payService.postV3(url, GSON.toJson(request));
+    return GSON.fromJson(response, SubDayEndBalanceWithdrawResult.class);
+  }
+
+  @Override
+  public SubDayEndBalanceWithdrawStatusResult querySubDayEndBalanceWithdraw(String subMchid, String outRequestNo) throws WxPayException {
+    String url = String.format("%s/v3/ecommerce/fund/balance-withdraw/out-request-no/%s?sub_mchid=%s", this.payService.getPayBaseUrl(), outRequestNo, subMchid);
+    String response = this.payService.getV3(url);
+    return GSON.fromJson(response, SubDayEndBalanceWithdrawStatusResult.class);
+  }
+
+  @Override
   public void modifySettlement(String subMchid, SettlementRequest request) throws WxPayException {
     String url = String.format("%s/v3/apply4sub/sub_merchants/%s/modify-settlement", this.payService.getPayBaseUrl(), subMchid);
     RsaCryptoUtil.encryptFields(request, this.payService.getConfig().getVerifier().getValidCertificate());
@@ -366,6 +438,57 @@ public class EcommerceServiceImpl implements EcommerceService {
   @Override
   public InputStream downloadBill(String url) throws WxPayException {
     return this.payService.downloadV3(url);
+  }
+
+  @Override
+  public SubsidiesCreateResult subsidiesCreate(SubsidiesCreateRequest subsidiesCreateRequest) throws WxPayException{
+    String url = String.format("%s/v3/ecommerce/subsidies/create", this.payService.getPayBaseUrl());
+    String response = this.payService.postV3(url, GSON.toJson(subsidiesCreateRequest));
+    return GSON.fromJson(response, SubsidiesCreateResult.class);
+  }
+
+  @Override
+  public  SubsidiesReturnResult subsidiesReturn(SubsidiesReturnRequest subsidiesReturnRequest) throws WxPayException{
+    String url = String.format("%s/v3/ecommerce/subsidies/return", this.payService.getPayBaseUrl());
+    String response = this.payService.postV3(url, GSON.toJson(subsidiesReturnRequest));
+    return GSON.fromJson(response, SubsidiesReturnResult.class);
+  }
+
+
+  @Override
+  public SubsidiesCancelResult subsidiesCancel(SubsidiesCancelRequest subsidiesCancelRequest) throws WxPayException{
+    String url = String.format("%s/v3/ecommerce/subsidies/cancel", this.payService.getPayBaseUrl());
+    String response = this.payService.postV3(url, GSON.toJson(subsidiesCancelRequest));
+    return GSON.fromJson(response, SubsidiesCancelResult.class);
+  }
+
+  @Override
+  public AccountCancelApplicationsResult createdAccountCancelApplication(AccountCancelApplicationsRequest accountCancelApplicationsRequest) throws WxPayException {
+    String url = String.format("%s/v3/ecommerce/account/cancel-applications", this.payService.getPayBaseUrl());
+    String response = this.payService.postV3(url, GSON.toJson(accountCancelApplicationsRequest));
+    return GSON.fromJson(response, AccountCancelApplicationsResult.class);
+  }
+
+  @Override
+  public AccountCancelApplicationsResult getAccountCancelApplication(String outApplyNo) throws WxPayException {
+    String url = String.format("%s/v3/ecommerce/account/cancel-applications/out-apply-no/%s", this.payService.getPayBaseUrl(), outApplyNo);
+    String result = this.payService.getV3(url);
+    return GSON.fromJson(result, AccountCancelApplicationsResult.class);
+  }
+
+  @Override
+  public AccountCancelApplicationsMediaResult uploadMediaAccountCancelApplication(File imageFile) throws WxPayException, IOException {
+    String url = String.format("%s/v3/ecommerce/account/cancel-applications/media", this.payService.getPayBaseUrl());
+    try (FileInputStream s1 = new FileInputStream(imageFile)) {
+      String sha256 = DigestUtils.sha256Hex(s1);
+      try (InputStream s2 = new FileInputStream(imageFile)) {
+        WechatPayUploadHttpPost request = new WechatPayUploadHttpPost.Builder(URI.create(url))
+          .withImage(imageFile.getName(), sha256, s2)
+          .buildEcommerceAccount();
+        String result = this.payService.postV3(url, request);
+        return GSON.fromJson(result, AccountCancelApplicationsMediaResult.class);
+      }
+    }
   }
 
   /**
@@ -408,7 +531,7 @@ public class EcommerceServiceImpl implements EcommerceService {
   public static Map<Object, Object> getObjectToMap(Object obj) {
     try {
       Map<Object, Object> result = new LinkedHashMap<>();
-      final Class<? extends Object> beanClass = obj.getClass();
+      final Class<?> beanClass = obj.getClass();
       final BeanInfo beanInfo = Introspector.getBeanInfo(beanClass);
       final PropertyDescriptor[] propertyDescriptors = beanInfo.getPropertyDescriptors();
       if (propertyDescriptors != null) {

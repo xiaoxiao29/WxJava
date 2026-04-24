@@ -22,7 +22,7 @@ public interface WxCpOaService {
    *
    * 请求方式：POST（HTTPS）
    * 请求地址： https://qyapi.weixin.qq.com/cgi-bin/oa/applyevent?access_token=ACCESS_TOKEN
-   * 文档地址：https://work.weixin.qq.com/api/doc/90000/90135/91853
+   * <a href="https://work.weixin.qq.com/api/doc/90000/90135/91853">文档地址</a>
    * </pre>
    *
    * @param request 请求
@@ -34,7 +34,7 @@ public interface WxCpOaService {
   /**
    * <pre>
    *  获取打卡数据
-   *  API doc : https://work.weixin.qq.com/api/doc#90000/90135/90262
+   *  <a href="https://work.weixin.qq.com/api/doc#90000/90135/90262">文档地址</a>
    * </pre>
    *
    * @param openCheckinDataType 打卡类型。1：上下班打卡；2：外出打卡；3：全部打卡
@@ -50,7 +50,7 @@ public interface WxCpOaService {
   /**
    * <pre>
    *   获取打卡规则
-   *   API doc : https://work.weixin.qq.com/api/doc#90000/90135/90263
+   *  <a href="https://work.weixin.qq.com/api/doc#90000/90135/90263">文档地址</a>
    * </pre>
    *
    * @param datetime   需要获取规则的当天日期
@@ -64,7 +64,7 @@ public interface WxCpOaService {
   /**
    * <pre>
    *   获取企业所有打卡规则
-   *   API doc : https://work.weixin.qq.com/api/doc/90000/90135/93384
+   * <a href="https://work.weixin.qq.com/api/doc/90000/90135/93384">文档地址</a>
    * </pre>
    *
    * @return 打卡规则列表 crop checkin option
@@ -82,7 +82,7 @@ public interface WxCpOaService {
    *
    * 一次拉取调用最多拉取100个审批记录，可以通过多次拉取的方式来满足需求，但调用频率不可超过600次/分。
    *
-   * API doc : https://work.weixin.qq.com/api/doc/90000/90135/91816
+   * <a href="https://work.weixin.qq.com/api/doc/90000/90135/91816">文档地址</a>
    * </pre>
    *
    * @param startTime 开始时间
@@ -93,6 +93,7 @@ public interface WxCpOaService {
    * @return WxCpApprovalInfo approval info
    * @throws WxErrorException .
    */
+  @Deprecated
   WxCpApprovalInfo getApprovalInfo(@NonNull Date startTime, @NonNull Date endTime, Integer cursor, Integer size,
                                    List<WxCpApprovalInfoQueryFilter> filters) throws WxErrorException;
 
@@ -106,7 +107,37 @@ public interface WxCpOaService {
    * @see me.chanjar.weixin.cp.api.WxCpOaService#getApprovalInfo me.chanjar.weixin.cp.api
    * .WxCpOaService#getApprovalInfome.chanjar.weixin.cp.api.WxCpOaService#getApprovalInfo
    */
+  @Deprecated
   WxCpApprovalInfo getApprovalInfo(@NonNull Date startTime, @NonNull Date endTime) throws WxErrorException;
+
+
+  /**
+   * <pre>
+   *
+   * 批量获取审批单号
+   *
+   * 审批应用及有权限的自建应用，可通过Secret调用本接口，以获取企业一段时间内企业微信“审批应用”单据的审批编号，支持按模板类型、申请人、部门、申请单审批状态等条件筛选。
+   * 自建应用调用此接口，需在“管理后台-应用管理-审批-API-审批数据权限”中，授权应用允许提交审批单据。
+   *
+   * 一次拉取调用最多拉取100个审批记录，可以通过多次拉取的方式来满足需求，但调用频率不可超过600次/分。
+   *
+   * <a href="https://work.weixin.qq.com/api/doc/90000/90135/91816">文档地址</a>
+   *
+   * 1 接口频率限制 600次/分钟
+   * 2 请求的参数endtime需要大于startime， 起始时间跨度不能超过31天；
+   * 3 老的分页游标字段cursor和next_cursor待废弃，请开发者使用新字段new_cursor和new_next_cursor。
+   * </pre>
+   *
+   * @param startTime 开始时间
+   * @param endTime   结束时间
+   * @param newCursor    分页查询游标，默认为0，后续使用返回的next_cursor进行分页拉取
+   * @param size      一次请求拉取审批单数量，默认值为100，上限值为100
+   * @param filters   筛选条件，可对批量拉取的审批申请设置约束条件，支持设置多个条件,nullable
+   * @return WxCpApprovalInfo approval info
+   * @throws WxErrorException .
+   */
+  WxCpApprovalInfo getApprovalInfo(@NonNull Date startTime, @NonNull Date endTime, String newCursor, Integer size,
+                                   List<WxCpApprovalInfoQueryFilter> filters) throws WxErrorException;
 
 
   /**
@@ -115,7 +146,7 @@ public interface WxCpOaService {
    *
    *   企业可通过审批应用或自建应用Secret调用本接口，根据审批单号查询企业微信“审批应用”的审批申请详情。
    *
-   *   API Doc : https://work.weixin.qq.com/api/doc/90000/90135/91983
+   *  <a href="https://work.weixin.qq.com/api/doc/90000/90135/91983">文档地址</a>
    * </pre>
    *
    * @param spNo 审批单编号。

@@ -1,5 +1,6 @@
 package cn.binarywang.wx.miniapp.api;
 
+import cn.binarywang.wx.miniapp.bean.WxMaCode2VerifyInfoResult;
 import cn.binarywang.wx.miniapp.bean.WxMaJscode2SessionResult;
 import cn.binarywang.wx.miniapp.bean.WxMaPhoneNumberInfo;
 import cn.binarywang.wx.miniapp.bean.WxMaUserInfo;
@@ -51,30 +52,32 @@ public interface WxMaUserService {
    * @param encryptedData 消息密文
    * @param ivStr         加密算法的初始向量
    * @return .
-   * @deprecated 请使用替代方法 {@link #getPhoneNoInfo(String)}
+   * @deprecated 当前（基础库2.21.2以下使用）旧版本，以上请使用替代方法 {@link #getPhoneNoInfo(String)}
    */
   @Deprecated
   WxMaPhoneNumberInfo getPhoneNoInfo(String sessionKey, String encryptedData, String ivStr);
 
   /**
-   * 获取手机号信息,基础库:2.21.2及以上
+   * 获取手机号信息,基础库:2.21.2及以上或2023年8月28日起
    *
-   * @param code 动态令牌
-   * @return .
+   * @param code 每个code只能使用一次，code的有效期为5min。code获取方式参考<a href="https://developers.weixin.qq.com/miniprogram/dev/framework/open-ability/getPhoneNumber.html">手机号快速验证组件</a>
+   * @return 用户手机号信息
    * @throws WxErrorException .
+   * @apiNote 该接口用于将code换取用户手机号。
    */
-  WxMaPhoneNumberInfo getPhoneNoInfo(String code) throws WxErrorException;
+  WxMaPhoneNumberInfo getPhoneNumber(String code) throws WxErrorException;
 
   /**
-   * 获取手机号信息,基础库:2.21.2及以上
+   * 获取手机号信息,基础库:2.21.2及以上或2023年8月28日起
    *
-   * @param code 动态令牌
-   * @return .
+   * @param code 每个code只能使用一次，code的有效期为5min。code获取方式参考<a href="https://developers.weixin.qq.com/miniprogram/dev/framework/open-ability/getPhoneNumber.html">手机号快速验证组件</a>
+   * @return 用户手机号信息
    * @throws WxErrorException .
-   * @deprecated 命名有些复杂，请使用替代方法 {@link #getPhoneNoInfo(String)}
+   * @apiNote 该接口用于将code换取用户手机号。
+   * @implNote 为保持命名风格一致，此方法将更名，推荐使用{@link WxMaUserService#getPhoneNumber(String)}
    */
   @Deprecated
-  WxMaPhoneNumberInfo getNewPhoneNoInfo(String code) throws WxErrorException;
+  WxMaPhoneNumberInfo getPhoneNoInfo(String code) throws WxErrorException;
 
   /**
    * 验证用户信息完整性.
@@ -85,4 +88,18 @@ public interface WxMaUserService {
    * @return .
    */
   boolean checkUserInfo(String sessionKey, String rawData, String signature);
+
+  /**
+   * 多端登录验证接口.
+   * <p>
+   * 通过 code 换取用户登录态信息，用于多端登录场景（如手表端）。
+   * </p>
+   * 文档地址：<a href="https://developers.weixin.qq.com/miniprogram/dev/platform-capabilities/miniapp/openapi/code2Verifyinfo.html">多端登录</a>
+   *
+   * @param code      登录时获取的 code
+   * @param checkcode 手表授权页面返回的 checkcode
+   * @return 登录验证结果，包含 session_key、openid、unionid 和 is_limit 字段
+   * @throws WxErrorException 调用微信接口失败时抛出
+   */
+  WxMaCode2VerifyInfoResult getCode2VerifyInfo(String code, String checkcode) throws WxErrorException;
 }

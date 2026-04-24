@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -33,6 +34,9 @@ public class ContentValue implements Serializable {
 
   private List<ContentValue.Department> departments;
 
+  @SerializedName("new_tips")
+  private NewTips newTips;
+
   private List<ContentValue.File> files;
 
   private List<ContentValue.Child> children;
@@ -49,6 +53,10 @@ public class ContentValue implements Serializable {
 
   @SerializedName("punch_correction")
   private PunchCorrection punchCorrection;
+
+  private Location location;
+
+  private Formula formula;
 
   /**
    * The type Date.
@@ -110,6 +118,68 @@ public class ContentValue implements Serializable {
   }
 
   /**
+   * The type Tips.
+   */
+  @Data
+  public static class NewTips implements Serializable {
+    private static final long serialVersionUID = 1094978100200056100L;
+    @SerializedName("tips_content")
+    private List<TipsContent> tipsContent;
+
+    /**
+     * The type tips_content.
+     */
+    @Data
+    public static class TipsContent implements Serializable {
+      private static final long serialVersionUID = 559432801311084797L;
+      @SerializedName("text")
+      private Text text;
+      private String lang;
+
+      /**
+       * The type sub_text.
+       */
+      @Data
+      public static class Text implements Serializable {
+        private static final long serialVersionUID = -70174360931158924L;
+        @SerializedName("sub_text")
+        private List<SubText> subText;
+      }
+
+      /**
+       * The type sub_text.
+       */
+      @Data
+      public static class SubText implements Serializable {
+        private static final long serialVersionUID = -8226911175438019317L;
+        private Integer type;
+        private Content content;
+
+        @Data
+        public static class Content implements Serializable {
+          private static final long serialVersionUID = -6813250009451940525L;
+          @SerializedName("plain_text")
+          private PlainText plainText;
+          private Link link;
+
+          @Data
+          public static class PlainText implements Serializable {
+            private static final long serialVersionUID = -599377674188314118L;
+            private String content;
+          }
+
+          @Data
+          public static class Link implements Serializable {
+            private static final long serialVersionUID = 2784173996170990308L;
+            private String title;
+            private String url;
+          }
+        }
+      }
+    }
+  }
+
+  /**
    * The type File.
    */
   @Data
@@ -118,6 +188,10 @@ public class ContentValue implements Serializable {
 
     @SerializedName("file_id")
     private String fileId;
+    @SerializedName("file_name")
+    private String fileName;
+    @SerializedName("file_url")
+    private String fileUrl;
   }
 
   /**
@@ -138,6 +212,8 @@ public class ContentValue implements Serializable {
     @SerializedName("date_range")
     private DataRange dateRange;
     private Integer type;
+    @SerializedName("slice_info")
+    private SliceInfo sliceInfo;
 
     /**
      * The type Data range.
@@ -153,6 +229,29 @@ public class ContentValue implements Serializable {
       @SerializedName("new_duration")
       private Long duration;
     }
+
+    /**
+     * The type slice_info
+     */
+    @Data
+    public static class SliceInfo implements Serializable {
+      private static final long serialVersionUID = 4369560551634923348L;
+      @SerializedName("day_items")
+      private List<DayItems> dayItems;
+      private Long duration;
+      private Integer state;
+
+      /**
+       * The type day_items
+       */
+      @Data
+      public static class DayItems implements Serializable {
+        private static final long serialVersionUID = -7076615961077782776L;
+        private Long daytime;
+        private Long duration;
+      }
+    }
+
   }
 
   /**
@@ -215,6 +314,31 @@ public class ContentValue implements Serializable {
     private static final long serialVersionUID = 2120523160034749170L;
     private String state;
     private Long time;
+    private Integer version;
+    @SerializedName("daymonthyear")
+    private Long dayMonthYear;
+  }
+
+  /**
+   * The type Location
+   */
+  @Data
+  public static class Location implements Serializable {
+    private static final long serialVersionUID = 2480012159725572839L;
+    private BigDecimal latitude;
+    private BigDecimal longitude;
+    private String title;
+    private String address;
+    private Long time;
+  }
+
+  /**
+   * The type Formula
+   */
+  @Data
+  public static class Formula implements Serializable {
+    private static final long serialVersionUID = 816968197271971247L;
+    private String value;
   }
 
 }

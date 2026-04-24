@@ -8,6 +8,7 @@ import me.chanjar.weixin.cp.api.ApiTestModule;
 import me.chanjar.weixin.cp.api.WxCpService;
 import me.chanjar.weixin.cp.bean.WxCpBaseResp;
 import me.chanjar.weixin.cp.bean.oa.*;
+import me.chanjar.weixin.cp.util.json.WxCpGsonBuilder;
 import org.apache.commons.lang3.time.DateFormatUtils;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
@@ -162,12 +163,250 @@ public class WxCpOaServiceImplTest {
    */
   @Test
   public void testGetCropCheckinOption() throws WxErrorException {
-
-    Date now = new Date();
     List<WxCpCropCheckinOption> results = wxService.getOaService().getCropCheckinOption();
     assertThat(results).isNotNull();
     System.out.println("results ");
     System.out.println(gson.toJson(results));
+  }
+
+  /**
+   * Test new ot_info_v2 structure deserialization.
+   */
+  @Test
+  public void testOtInfoV2Deserialization() {
+    // Test JSON with ot_info_v2 structure based on the new API response format
+    String jsonWithOtInfoV2 = "{\n" +
+      "  \"groupid\": 1,\n" +
+      "  \"groupname\": \"test group\",\n" +
+      "  \"grouptype\": 0,\n" +
+      "  \"ot_info_v2\": {\n" +
+      "    \"workdayconf\": {\n" +
+      "      \"allow_ot\": true,\n" +
+      "      \"type\": 1\n" +
+      "    },\n" +
+      "    \"restdayconf\": {\n" +
+      "      \"allow_ot\": false,\n" +
+      "      \"type\": 0\n" +
+      "    },\n" +
+      "    \"holidayconf\": {\n" +
+      "      \"allow_ot\": true,\n" +
+      "      \"type\": 2\n" +
+      "    }\n" +
+      "  }\n" +
+      "}";
+
+    WxCpCropCheckinOption option = WxCpGsonBuilder.create().fromJson(jsonWithOtInfoV2, WxCpCropCheckinOption.class);
+    assertThat(option).isNotNull();
+    assertThat(option.getOtInfoV2()).isNotNull();
+    assertThat(option.getOtInfoV2().getWorkdayConf()).isNotNull();
+    assertThat(option.getOtInfoV2().getWorkdayConf().getAllowOt()).isTrue();
+    assertThat(option.getOtInfoV2().getWorkdayConf().getType()).isEqualTo(1);
+    assertThat(option.getOtInfoV2().getRestdayConf()).isNotNull();
+    assertThat(option.getOtInfoV2().getRestdayConf().getAllowOt()).isFalse();
+    assertThat(option.getOtInfoV2().getHolidayConf().getAllowOt()).isTrue();
+    
+    System.out.println("Parsed ot_info_v2 structure:");
+    System.out.println(gson.toJson(option.getOtInfoV2()));
+  }
+
+  /**
+   * Test late_rule field deserialization in getCropCheckinOption response.
+   */
+  @Test
+  public void testLateRuleDeserialization() {
+    // Test JSON with late_rule structure based on the issue #3323
+    String jsonWithLateRule = "{\n" +
+      "  \"grouptype\": 1,\n" +
+      "  \"groupid\": 1,\n" +
+      "  \"checkindate\": [\n" +
+      "    {\n" +
+      "      \"workdays\": [1, 2, 3, 4, 5],\n" +
+      "      \"checkintime\": [\n" +
+      "        {\n" +
+      "          \"time_id\": 1,\n" +
+      "          \"work_sec\": 32400,\n" +
+      "          \"off_work_sec\": 64800,\n" +
+      "          \"remind_work_sec\": 31800,\n" +
+      "          \"remind_off_work_sec\": 64800,\n" +
+      "          \"rest_begin_time\": 43200,\n" +
+      "          \"rest_end_time\": 48600,\n" +
+      "          \"allow_rest\": true,\n" +
+      "          \"earliest_work_sec\": 21600,\n" +
+      "          \"latest_work_sec\": 64740,\n" +
+      "          \"earliest_off_work_sec\": 32460,\n" +
+      "          \"latest_off_work_sec\": 107940,\n" +
+      "          \"no_need_checkon\": false,\n" +
+      "          \"no_need_checkoff\": false\n" +
+      "        }\n" +
+      "      ],\n" +
+      "      \"noneed_offwork\": false,\n" +
+      "      \"limit_aheadtime\": 0,\n" +
+      "      \"flex_on_duty_time\": 0,\n" +
+      "      \"flex_off_duty_time\": 0,\n" +
+      "      \"allow_flex\": false,\n" +
+      "      \"late_rule\": {\n" +
+      "        \"offwork_after_time\": 3600,\n" +
+      "        \"onwork_flex_time\": 3600,\n" +
+      "        \"allow_offwork_after_time\": true,\n" +
+      "        \"timerules\": [\n" +
+      "          {\n" +
+      "            \"offwork_after_time\": 18000,\n" +
+      "            \"onwork_flex_time\": 3600\n" +
+      "          },\n" +
+      "          {\n" +
+      "            \"offwork_after_time\": 21600,\n" +
+      "            \"onwork_flex_time\": 7200\n" +
+      "          }\n" +
+      "        ]\n" +
+      "      },\n" +
+      "      \"max_allow_arrive_early\": 0,\n" +
+      "      \"max_allow_arrive_late\": 0\n" +
+      "    }\n" +
+      "  ],\n" +
+      "  \"groupname\": \"打卡\",\n" +
+      "  \"need_photo\": false\n" +
+      "}";
+
+    WxCpCropCheckinOption option = WxCpGsonBuilder.create().fromJson(jsonWithLateRule, WxCpCropCheckinOption.class);
+    assertThat(option).isNotNull();
+    assertThat(option.getCheckinDate()).isNotNull();
+    assertThat(option.getCheckinDate().size()).isEqualTo(1);
+    
+    WxCpCheckinGroupBase.CheckinDate checkinDate = option.getCheckinDate().get(0);
+    assertThat(checkinDate).isNotNull();
+    assertThat(checkinDate.getAllowFlex()).isFalse();
+    assertThat(checkinDate.getMaxAllowArriveEarly()).isEqualTo(0);
+    assertThat(checkinDate.getMaxAllowArriveLate()).isEqualTo(0);
+    
+    // Test late_rule field
+    assertThat(checkinDate.getLateRule()).isNotNull();
+    assertThat(checkinDate.getLateRule().getOffWorkAfterTime()).isEqualTo(3600);
+    assertThat(checkinDate.getLateRule().getOnWorkFlexTime()).isEqualTo(3600);
+    assertThat(checkinDate.getLateRule().getAllowOffWorkAfterTime()).isTrue();
+    assertThat(checkinDate.getLateRule().getTimerules()).isNotNull();
+    assertThat(checkinDate.getLateRule().getTimerules().size()).isEqualTo(2);
+    
+    // Test timerules
+    WxCpCheckinGroupBase.TimeRule firstRule = checkinDate.getLateRule().getTimerules().get(0);
+    assertThat(firstRule.getOffWorkAfterTime()).isEqualTo(18000);
+    assertThat(firstRule.getOnWorkFlexTime()).isEqualTo(3600);
+    
+    // Test CheckinTime fields
+    assertThat(checkinDate.getCheckinTime()).isNotNull();
+    assertThat(checkinDate.getCheckinTime().size()).isEqualTo(1);
+    
+    WxCpCheckinGroupBase.CheckinTime checkinTime = checkinDate.getCheckinTime().get(0);
+    assertThat(checkinTime.getTimeId()).isEqualTo(1);
+    assertThat(checkinTime.getRestBeginTime()).isEqualTo(43200);
+    assertThat(checkinTime.getRestEndTime()).isEqualTo(48600);
+    assertThat(checkinTime.getAllowRest()).isTrue();
+    assertThat(checkinTime.getEarliestWorkSec()).isEqualTo(21600);
+    assertThat(checkinTime.getLatestWorkSec()).isEqualTo(64740);
+    assertThat(checkinTime.getEarliestOffWorkSec()).isEqualTo(32460);
+    assertThat(checkinTime.getLatestOffWorkSec()).isEqualTo(107940);
+    assertThat(checkinTime.getNoNeedCheckon()).isFalse();
+    assertThat(checkinTime.getNoNeedCheckoff()).isFalse();
+    
+    System.out.println("Successfully parsed late_rule and new checkintime fields:");
+    System.out.println(gson.toJson(option));
+  }
+
+  /**
+   * Test issue #3323 - full JSON from the issue report.
+   */
+  @Test
+  public void testIssue3323FullJson() {
+    // Full JSON from issue #3323
+    String issueJson = "{\n" +
+      "      \"grouptype\": 1,\n" +
+      "      \"groupid\": 1,\n" +
+      "      \"checkindate\": [\n" +
+      "        {\n" +
+      "          \"workdays\": [\n" +
+      "            1,\n" +
+      "            2,\n" +
+      "            3,\n" +
+      "            4,\n" +
+      "            5\n" +
+      "          ],\n" +
+      "          \"checkintime\": [\n" +
+      "            {\n" +
+      "              \"time_id\": 1,\n" +
+      "              \"work_sec\": 32400,\n" +
+      "              \"off_work_sec\": 64800,\n" +
+      "              \"remind_work_sec\": 31800,\n" +
+      "              \"remind_off_work_sec\": 64800,\n" +
+      "              \"rest_begin_time\": 43200,\n" +
+      "              \"rest_end_time\": 48600,\n" +
+      "              \"allow_rest\": true,\n" +
+      "              \"earliest_work_sec\": 21600,\n" +
+      "              \"latest_work_sec\": 64740,\n" +
+      "              \"earliest_off_work_sec\": 32460,\n" +
+      "              \"latest_off_work_sec\": 107940,\n" +
+      "              \"no_need_checkon\": false,\n" +
+      "              \"no_need_checkoff\": false\n" +
+      "            }\n" +
+      "          ],\n" +
+      "          \"noneed_offwork\": false,\n" +
+      "          \"limit_aheadtime\": 0,\n" +
+      "          \"flex_on_duty_time\": 0,\n" +
+      "          \"flex_off_duty_time\": 0,\n" +
+      "          \"allow_flex\": false,\n" +
+      "          \"late_rule\": {\n" +
+      "            \"offwork_after_time\": 3600,\n" +
+      "            \"onwork_flex_time\": 3600,\n" +
+      "            \"allow_offwork_after_time\": true,\n" +
+      "            \"timerules\": [\n" +
+      "              {\n" +
+      "                \"offwork_after_time\": 18000,\n" +
+      "                \"onwork_flex_time\": 3600\n" +
+      "              },\n" +
+      "              {\n" +
+      "                \"offwork_after_time\": 21600,\n" +
+      "                \"onwork_flex_time\": 7200\n" +
+      "              },\n" +
+      "              {\n" +
+      "                \"offwork_after_time\": 28800,\n" +
+      "                \"onwork_flex_time\": 10800\n" +
+      "              }\n" +
+      "            ]\n" +
+      "          },\n" +
+      "          \"max_allow_arrive_early\": 0,\n" +
+      "          \"max_allow_arrive_late\": 0\n" +
+      "        }\n" +
+      "      ],\n" +
+      "      \"spe_workdays\": [],\n" +
+      "      \"spe_offdays\": [],\n" +
+      "      \"sync_holidays\": true,\n" +
+      "      \"groupname\": \"打卡\",\n" +
+      "      \"need_photo\": false,\n" +
+      "      \"wifimac_infos\": [],\n" +
+      "      \"note_can_use_local_pic\": true,\n" +
+      "      \"allow_checkin_offworkday\": false,\n" +
+      "      \"allow_apply_offworkday\": false,\n" +
+      "      \"loc_infos\": []\n" +
+      "    }";
+
+    WxCpCropCheckinOption option = WxCpGsonBuilder.create().fromJson(issueJson, WxCpCropCheckinOption.class);
+    assertThat(option).isNotNull();
+    assertThat(option.getGroupId()).isEqualTo(1);
+    assertThat(option.getGroupName()).isEqualTo("打卡");
+    assertThat(option.getCheckinDate()).isNotNull();
+    assertThat(option.getCheckinDate().size()).isEqualTo(1);
+    
+    WxCpCheckinGroupBase.CheckinDate checkinDate = option.getCheckinDate().get(0);
+    assertThat(checkinDate.getLateRule()).isNotNull();
+    assertThat(checkinDate.getLateRule().getOffWorkAfterTime()).isEqualTo(3600);
+    assertThat(checkinDate.getLateRule().getOnWorkFlexTime()).isEqualTo(3600);
+    assertThat(checkinDate.getLateRule().getAllowOffWorkAfterTime()).isTrue();
+    assertThat(checkinDate.getLateRule().getTimerules()).isNotNull();
+    assertThat(checkinDate.getLateRule().getTimerules().size()).isEqualTo(3);
+    
+    System.out.println("✓ Successfully parsed full JSON from issue #3323");
+    System.out.println("✓ Late Rule offwork_after_time: " + checkinDate.getLateRule().getOffWorkAfterTime());
+    System.out.println("✓ Late Rule onwork_flex_time: " + checkinDate.getLateRule().getOnWorkFlexTime());
+    System.out.println("✓ Late Rule allow_offwork_after_time: " + checkinDate.getLateRule().getAllowOffWorkAfterTime());
+    System.out.println("✓ Late Rule timerules count: " + checkinDate.getLateRule().getTimerules().size());
   }
 
   /**
@@ -211,6 +450,11 @@ public class WxCpOaServiceImplTest {
    */
   @Test
   public void testGetTemplateDetail() throws WxErrorException {
+
+    String json = "{\"errcode\":0,\"errmsg\":\"ok\",\"template_names\":[{\"text\":\"销售用章申请-CIC测试\",\"lang\":\"zh_CN\"}],\"template_content\":{\"controls\":[{\"property\":{\"control\":\"Text\",\"id\":\"Text-1642064119106\",\"title\":[{\"text\":\"甲方全称\",\"lang\":\"zh_CN\"}],\"placeholder\":[{\"text\":\"请输入\",\"lang\":\"zh_CN\"}],\"require\":1,\"un_print\":0,\"inner_id\":\"\",\"un_replace\":0,\"display\":1}},{\"property\":{\"control\":\"Selector\",\"id\":\"Selector-1641521155746\",\"title\":[{\"text\":\"用章公司\",\"lang\":\"zh_CN\"}],\"placeholder\":[{\"text\":\"请选择\",\"lang\":\"zh_CN\"}],\"require\":1,\"un_print\":0,\"inner_id\":\"\",\"un_replace\":0,\"display\":1},\"config\":{\"selector\":{\"type\":\"single\",\"options\":[{\"key\":\"option-1641521155746\",\"value\":[{\"text\":\"有限公司\",\"lang\":\"zh_CN\"}]},{\"key\":\"option-1703845381898\",\"value\":[{\"text\":\"有限公司\",\"lang\":\"zh_CN\"}]},{\"key\":\"option-1643277806277\",\"value\":[{\"text\":\"有限公司\",\"lang\":\"zh_CN\"}]},{\"key\":\"option-1641521181119\",\"value\":[{\"text\":\"有限公司\",\"lang\":\"zh_CN\"}]},{\"key\":\"option-1641521191559\",\"value\":[{\"text\":\"有限公司\",\"lang\":\"zh_CN\"}]},{\"key\":\"option-1641521216515\",\"value\":[{\"text\":\"有限公司\",\"lang\":\"zh_CN\"}]},{\"key\":\"option-1650417735718\",\"value\":[{\"text\":\"有限公司\",\"lang\":\"zh_CN\"}]},{\"key\":\"option-1652756795298\",\"value\":[{\"text\":\"有限公司\",\"lang\":\"zh_CN\"}]},{\"key\":\"option-1664422448363\",\"value\":[{\"text\":\"有限公司\",\"lang\":\"zh_CN\"}]},{\"key\":\"option-1673487035814\",\"value\":[{\"text\":\"有限公司\",\"lang\":\"zh_CN\"}]},{\"key\":\"option-1675128722320\",\"value\":[{\"text\":\"事务所\",\"lang\":\"zh_CN\"}]},{\"key\":\"option-1678071926146\",\"value\":[{\"text\":\"有限公司\",\"lang\":\"zh_CN\"}]},{\"key\":\"option-1678071927225\",\"value\":[{\"text\":\"有限公司\",\"lang\":\"zh_CN\"}]},{\"key\":\"option-1703845339862\",\"value\":[{\"text\":\"有限公司\",\"lang\":\"zh_CN\"}]},{\"key\":\"option-1703845330660\",\"value\":[{\"text\":\"有限公司\",\"lang\":\"zh_CN\"}]},{\"key\":\"option-1684459670059\",\"value\":[{\"text\":\"有限公司\",\"lang\":\"zh_CN\"}]},{\"key\":\"option-1698111016115\",\"value\":[{\"text\":\"有限公司\",\"lang\":\"zh_CN\"}]},{\"key\":\"option-1705559650950\",\"value\":[{\"text\":\"有限公司\",\"lang\":\"zh_CN\"}]}],\"op_relations\":[]}}},{\"property\":{\"control\":\"Text\",\"id\":\"Text-1641521297125\",\"title\":[{\"text\":\"渠道来源\",\"lang\":\"zh_CN\"}],\"placeholder\":[{\"text\":\"请输入\",\"lang\":\"zh_CN\"}],\"require\":1,\"un_print\":0,\"inner_id\":\"\",\"un_replace\":0,\"display\":1}},{\"property\":{\"control\":\"Selector\",\"id\":\"Selector-1641521316173\",\"title\":[{\"text\":\"印章类型\",\"lang\":\"zh_CN\"}],\"placeholder\":[{\"text\":\"请选择\",\"lang\":\"zh_CN\"}],\"require\":1,\"un_print\":0,\"inner_id\":\"\",\"un_replace\":0,\"display\":1},\"config\":{\"selector\":{\"type\":\"single\",\"options\":[{\"key\":\"option-1641521316173\",\"value\":[{\"text\":\"公章\",\"lang\":\"zh_CN\"}]},{\"key\":\"option-1641521316174\",\"value\":[{\"text\":\"业务章\",\"lang\":\"zh_CN\"}]},{\"key\":\"option-1641521339762\",\"value\":[{\"text\":\"法人章\",\"lang\":\"zh_CN\"}]}],\"op_relations\":[]}}},{\"property\":{\"control\":\"Selector\",\"id\":\"Selector-1641521355432\",\"title\":[{\"text\":\"是否外带\",\"lang\":\"zh_CN\"}],\"placeholder\":[{\"text\":\"请选择\",\"lang\":\"zh_CN\"}],\"require\":1,\"un_print\":0,\"inner_id\":\"\",\"un_replace\":0,\"display\":1},\"config\":{\"selector\":{\"type\":\"single\",\"options\":[{\"key\":\"option-1641521355432\",\"value\":[{\"text\":\"否\",\"lang\":\"zh_CN\"}]},{\"key\":\"option-1641521355433\",\"value\":[{\"text\":\"是\",\"lang\":\"zh_CN\"}]}],\"op_relations\":[]}}},{\"property\":{\"control\":\"Selector\",\"id\":\"Selector-1648619603087\",\"title\":[{\"text\":\"盖章形式\",\"lang\":\"zh_CN\"}],\"placeholder\":[{\"text\":\"请选择\",\"lang\":\"zh_CN\"}],\"require\":1,\"un_print\":0,\"inner_id\":\"\",\"un_replace\":0,\"display\":1},\"config\":{\"selector\":{\"type\":\"single\",\"options\":[{\"key\":\"option-1648619603087\",\"value\":[{\"text\":\"电子合同章\",\"lang\":\"zh_CN\"}]},{\"key\":\"option-1648619603088\",\"value\":[{\"text\":\"纸质合同章\",\"lang\":\"zh_CN\"}]}],\"op_relations\":[]}}},{\"property\":{\"control\":\"Textarea\",\"id\":\"Textarea-1641521378351\",\"title\":[{\"text\":\"用印事由\",\"lang\":\"zh_CN\"}],\"placeholder\":[{\"text\":\"请输入\",\"lang\":\"zh_CN\"}],\"require\":1,\"un_print\":0,\"inner_id\":\"\",\"un_replace\":0,\"display\":1}},{\"property\":{\"control\":\"Date\",\"id\":\"Date-1641521411373\",\"title\":[{\"text\":\"借用时间\",\"lang\":\"zh_CN\"}],\"placeholder\":[{\"text\":\"请选择\",\"lang\":\"zh_CN\"}],\"require\":0,\"un_print\":0,\"inner_id\":\"\",\"un_replace\":0,\"display\":1},\"config\":{\"date\":{\"type\":\"hour\"}}},{\"property\":{\"control\":\"Date\",\"id\":\"Date-1641521421730\",\"title\":[{\"text\":\"归还时间\",\"lang\":\"zh_CN\"}],\"placeholder\":[{\"text\":\"请选择\",\"lang\":\"zh_CN\"}],\"require\":0,\"un_print\":0,\"inner_id\":\"\",\"un_replace\":0,\"display\":1},\"config\":{\"date\":{\"type\":\"hour\"}}},{\"property\":{\"control\":\"Selector\",\"id\":\"Selector-1641521441251\",\"title\":[{\"text\":\"文件类型\",\"lang\":\"zh_CN\"}],\"placeholder\":[{\"text\":\"请选择\",\"lang\":\"zh_CN\"}],\"require\":1,\"un_print\":0,\"inner_id\":\"\",\"un_replace\":0,\"display\":1},\"config\":{\"selector\":{\"type\":\"single\",\"options\":[{\"key\":\"option-1641521441251\",\"value\":[{\"text\":\"业务合同\",\"lang\":\"zh_CN\"}]},{\"key\":\"option-1643278221491\",\"value\":[{\"text\":\"人事行政类文件\",\"lang\":\"zh_CN\"}]},{\"key\":\"option-1641521534238\",\"value\":[{\"text\":\"经纪人、商事服务合作合同\",\"lang\":\"zh_CN\"}]}],\"op_relations\":[]}}},{\"property\":{\"control\":\"Text\",\"id\":\"Text-1641521571559\",\"title\":[{\"text\":\"文件名称\",\"lang\":\"zh_CN\"}],\"placeholder\":[{\"text\":\"请输入\",\"lang\":\"zh_CN\"}],\"require\":1,\"un_print\":0,\"inner_id\":\"\",\"un_replace\":0,\"display\":1}},{\"property\":{\"control\":\"Text\",\"id\":\"Text-1641521587698\",\"title\":[{\"text\":\"文件份数\",\"lang\":\"zh_CN\"}],\"placeholder\":[{\"text\":\"请输入整数\",\"lang\":\"zh_CN\"}],\"require\":1,\"un_print\":0,\"inner_id\":\"\",\"un_replace\":0,\"display\":1}},{\"property\":{\"control\":\"Date\",\"id\":\"Date-1641521607834\",\"title\":[{\"text\":\"用印日期\",\"lang\":\"zh_CN\"}],\"placeholder\":[{\"text\":\"请选择\",\"lang\":\"zh_CN\"}],\"require\":1,\"un_print\":0,\"inner_id\":\"\",\"un_replace\":0,\"display\":1},\"config\":{\"date\":{\"type\":\"day\"}}},{\"property\":{\"control\":\"File\",\"id\":\"File-1641521617014\",\"title\":[{\"text\":\"附件\",\"lang\":\"zh_CN\"}],\"placeholder\":[{\"text\":\"一定要上传所盖章原件，以附件内容为主\",\"lang\":\"zh_CN\"}],\"require\":1,\"un_print\":0,\"inner_id\":\"\",\"un_replace\":0,\"display\":1},\"config\":{\"file\":{\"is_only_photo\":0}}}]}}";
+    WxCpOaApprovalTemplateResult oaApprovalTemplateResult = WxCpOaApprovalTemplateResult.fromJson(json);
+    System.out.println("模板信息：" + oaApprovalTemplateResult.toJson());
+
     String templateId = "3TkZjxugodbqpEMk9j7X6h6zKqYkc7MxQrrFmT7H";
     WxCpOaApprovalTemplateResult result = wxService.getOaService().getTemplateDetail(templateId);
     assertThat(result).isNotNull();
@@ -321,4 +565,75 @@ public class WxCpOaServiceImplTest {
 
   }
 
+  /**
+   * 创建审批模板
+   * https://developer.work.weixin.qq.com/document/path/97437
+   */
+  @Test
+  public void testCreateOaApprovalTemplate() {
+    //TODO
+    String json = "{\n" +
+      "    \"template_name\": [{\n" +
+      "        \"text\": \"我的api测试模版\",\n" +
+      "        \"lang\": \"zh_CN\"\n" +
+      "    }],\n" +
+      "    \"template_content\": {\n" +
+      "        \"controls\": [{\n" +
+      "            \"property\": {\n" +
+      "                \"control\": \"Selector\",\n" +
+      "                \"id\": \"Selector-01\",\n" +
+      "                \"title\": [{\n" +
+      "                    \"text\": \"控件名称\",\n" +
+      "                    \"lang\": \"zh_CN\"\n" +
+      "                }],\n" +
+      "                \"placeholder\": [{\n" +
+      "                    \"text\": \"控件说明\",\n" +
+      "                    \"lang\": \"zh_CN\"\n" +
+      "                }],\n" +
+      "                \"require\": 0,\n" +
+      "                \"un_print\": 1\n" +
+      "            },\n" +
+      "            \"config\":{\n" +
+      "                \"selector\": {\n" +
+      "                \"type\": \"multi\",\n" +
+      "                \"options\": [\n" +
+      "                    {\n" +
+      "                        \"key\": \"option-1\", \n" +
+      "                        \"value\":{\n" +
+      "                            \"text\":\"选项1\",\n" +
+      "                            \"lang\":\"zh_CN\"\n" +
+      "                        }\n" +
+      "                    },\n" +
+      "                    {\n" +
+      "                        \"key\": \"option-2\",\n" +
+      "                        \"value\":{\n" +
+      "                            \"text\":\"选项2\",\n" +
+      "                            \"lang\":\"zh_CN\"\n" +
+      "                        }\n" +
+      "                    }\n" +
+      "                ]\n" +
+      "                }\n" +
+      "            }\n" +
+      "        }]\n" +
+      "    }\n" +
+      "}";
+    WxCpOaApprovalTemplate createTemplate = WxCpOaApprovalTemplate.fromJson(json);
+    System.out.println("create_template数据为：" + createTemplate.toJson());
+
+  }
+
+  @Test
+  public void testUpdateOaApprovalTemplate() {
+    //TODO
+  }
+
+  @Test
+  public void testGetCheckinScheduleList() {
+    //TODO
+  }
+
+  @Test
+  public void testAddCheckInUserFace() {
+    //TODO
+  }
 }

@@ -9,21 +9,23 @@ import lombok.extern.slf4j.Slf4j;
 import me.chanjar.weixin.common.redis.JedisWxRedisOps;
 import me.chanjar.weixin.common.redis.RedisTemplateWxRedisOps;
 import me.chanjar.weixin.common.redis.WxRedisOps;
-import me.chanjar.weixin.mp.config.WxMpHostConfig;
+import me.chanjar.weixin.common.util.http.apache.ApacheHttpClientBuilder;
+import me.chanjar.weixin.common.util.http.apache.DefaultApacheHttpClientBuilder;
 import me.chanjar.weixin.mp.config.WxMpConfigStorage;
+import me.chanjar.weixin.mp.config.WxMpHostConfig;
 import me.chanjar.weixin.mp.config.impl.WxMpDefaultConfigImpl;
 import me.chanjar.weixin.mp.config.impl.WxMpRedisConfigImpl;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
-import redis.clients.jedis.JedisPoolAbstract;
 import redis.clients.jedis.JedisPoolConfig;
 import redis.clients.jedis.JedisSentinelPool;
+import redis.clients.jedis.util.Pool;
 
 import java.util.Set;
 
@@ -74,7 +76,7 @@ public class WxMpStorageAutoConfiguration {
   }
 
   private WxMpConfigStorage jedisConfigStorage() {
-    JedisPoolAbstract jedisPool;
+    Pool<Jedis> jedisPool;
     if (wxMpProperties.getConfigStorage() != null && wxMpProperties.getConfigStorage().getRedis() != null
       && StringUtils.isNotEmpty(wxMpProperties.getConfigStorage().getRedis().getHost())) {
       jedisPool = getJedisPool();
@@ -122,7 +124,20 @@ public class WxMpStorageAutoConfiguration {
     config.setSecret(properties.getSecret());
     config.setToken(properties.getToken());
     config.setAesKey(properties.getAesKey());
-
+    WxMpProperties.ConfigStorage storage = properties.getConfigStorage();
+    // 设置自定义的HttpClient超时配置
+    ApacheHttpClientBuilder clientBuilder = config.getApacheHttpClientBuilder();
+    if (clientBuilder == null) {
+      clientBuilder = DefaultApacheHttpClientBuilder.get();
+    }
+    if (clientBuilder instanceof DefaultApacheHttpClientBuilder) {
+      DefaultApacheHttpClientBuilder defaultBuilder = (DefaultApacheHttpClientBuilder) clientBuilder;
+      defaultBuilder.setConnectionTimeout(storage.getConnectionTimeout());
+      defaultBuilder.setSoTimeout(storage.getSoTimeout());
+      defaultBuilder.setConnectionRequestTimeout(storage.getConnectionRequestTimeout());
+      config.setApacheHttpClientBuilder(defaultBuilder);
+    }
+    config.setUseStableAccessToken(wxMpProperties.isUseStableAccessToken());
     config.setHttpProxyHost(configStorageProperties.getHttpProxyHost());
     config.setHttpProxyUsername(configStorageProperties.getHttpProxyUsername());
     config.setHttpProxyPassword(configStorageProperties.getHttpProxyPassword());
@@ -131,7 +146,7 @@ public class WxMpStorageAutoConfiguration {
     }
   }
 
-  private JedisPoolAbstract getJedisPool() {
+  private Pool<Jedis> getJedisPool() {
     RedisProperties redis = wxMpProperties.getConfigStorage().getRedis();
 
     JedisPoolConfig config = new JedisPoolConfig();

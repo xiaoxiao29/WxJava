@@ -42,6 +42,7 @@ public class WxPayScoreRequest implements Serializable {
    * openid : oUpF8uMuAJO_M2pxb1Q9zNjWeS6o
    * need_user_confirm : true
    * profitSharing : false：不分账，默认：false,true：分账
+   * device : {"start_device_id":"202501","end_device_id":"202502","materiel_no":"212323232"}
    */
   @SerializedName("out_order_no")
   private String outOrderNo;
@@ -80,8 +81,21 @@ public class WxPayScoreRequest implements Serializable {
   @SerializedName("type")
   private String type;
   @SerializedName("detail")
-  private Detail detail;
+  private SyncDetail detail;
   @SerializedName("authorization_code")
   private String authorizationCode;
 
+  /**
+   * 完结服务时间
+   * 时间使用ISO 8601所定义的格式。
+   * 示例：
+   * - YYYY-MM-DDTHH:mm:ss.SSSZ
+   * - YYYY-MM-DDTHH:mm:ssZ
+   * - YYYY-MM-DDTHH:mm:ss.SSS+08:00
+   * - YYYY-MM-DDTHH:mm:ss+08:00
+   */
+  @SerializedName("complete_time")
+  private String completeTime;
+  @SerializedName("device")
+  private Device device;
 }

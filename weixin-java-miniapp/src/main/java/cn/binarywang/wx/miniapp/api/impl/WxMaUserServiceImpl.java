@@ -2,6 +2,7 @@ package cn.binarywang.wx.miniapp.api.impl;
 
 import cn.binarywang.wx.miniapp.api.WxMaService;
 import cn.binarywang.wx.miniapp.api.WxMaUserService;
+import cn.binarywang.wx.miniapp.bean.WxMaCode2VerifyInfoResult;
 import cn.binarywang.wx.miniapp.bean.WxMaJscode2SessionResult;
 import cn.binarywang.wx.miniapp.bean.WxMaPhoneNumberInfo;
 import cn.binarywang.wx.miniapp.bean.WxMaUserInfo;
@@ -18,6 +19,7 @@ import org.apache.commons.codec.digest.DigestUtils;
 
 import java.util.Map;
 
+import static cn.binarywang.wx.miniapp.constant.WxMaApiUrlConstants.User.CODE_2_VERIFY_INFO_URL;
 import static cn.binarywang.wx.miniapp.constant.WxMaApiUrlConstants.User.GET_PHONE_NUMBER_URL;
 import static cn.binarywang.wx.miniapp.constant.WxMaApiUrlConstants.User.SET_USER_STORAGE;
 
@@ -63,7 +65,7 @@ public class WxMaUserServiceImpl implements WxMaUserService {
   }
 
   @Override
-  public WxMaPhoneNumberInfo getPhoneNoInfo(String code) throws WxErrorException {
+  public WxMaPhoneNumberInfo getPhoneNumber(String code) throws WxErrorException {
     JsonObject param = new JsonObject();
     param.addProperty("code", code);
     String responseContent = this.service.post(GET_PHONE_NUMBER_URL, param.toString());
@@ -72,19 +74,27 @@ public class WxMaUserServiceImpl implements WxMaUserService {
       return WxMaGsonBuilder.create().fromJson(response.getAsJsonObject(PHONE_INFO),
         WxMaPhoneNumberInfo.class);
     }
-
     return null;
   }
 
   @Override
-  public WxMaPhoneNumberInfo getNewPhoneNoInfo(String code) throws WxErrorException {
-    return this.getPhoneNoInfo(code);
+  public WxMaPhoneNumberInfo getPhoneNoInfo(String code) throws WxErrorException {
+    return this.getPhoneNumber(code);
   }
 
   @Override
   public boolean checkUserInfo(String sessionKey, String rawData, String signature) {
     final String generatedSignature = DigestUtils.sha1Hex(rawData + sessionKey);
     return generatedSignature.equals(signature);
+  }
+
+  @Override
+  public WxMaCode2VerifyInfoResult getCode2VerifyInfo(String code, String checkcode) throws WxErrorException {
+    JsonObject param = new JsonObject();
+    param.addProperty("code", code);
+    param.addProperty("checkcode", checkcode);
+    String responseContent = this.service.post(CODE_2_VERIFY_INFO_URL, param.toString());
+    return WxMaCode2VerifyInfoResult.fromJson(responseContent);
   }
 
 }

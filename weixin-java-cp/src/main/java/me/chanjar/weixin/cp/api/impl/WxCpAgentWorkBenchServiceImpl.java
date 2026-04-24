@@ -10,10 +10,10 @@ import me.chanjar.weixin.cp.bean.WxCpAgentWorkBench;
 import static me.chanjar.weixin.cp.constant.WxCpApiPathConsts.WorkBench.*;
 
 /**
- * The type Wx cp agent work bench service.
+ * 工作台自定义展示实现
  *
- * @author songshiyu  created on  : create in 11:24 2020/9/28
- * @description: 工作台自定义展示实现
+ * @author songshiyu
+ * created at 11:24 2020/9/28
  */
 @RequiredArgsConstructor
 public class WxCpAgentWorkBenchServiceImpl implements WxCpAgentWorkBenchService {
@@ -37,5 +37,11 @@ public class WxCpAgentWorkBenchServiceImpl implements WxCpAgentWorkBenchService 
   public void setWorkBenchData(WxCpAgentWorkBench wxCpAgentWorkBench) throws WxErrorException {
     final String url = String.format(this.mainService.getWxCpConfigStorage().getApiUrl(WORKBENCH_DATA_SET));
     this.mainService.post(url, wxCpAgentWorkBench.toUserDataString());
+  }
+
+  @Override
+  public void batchSetWorkBenchData(WxCpAgentWorkBench wxCpAgentWorkBench) throws WxErrorException {
+    final String url = String.format(this.mainService.getWxCpConfigStorage().getApiUrl(WORKBENCH_BATCH_DATA_SET));
+    this.mainService.post(url, wxCpAgentWorkBench.toBatchUserDataString());
   }
 }

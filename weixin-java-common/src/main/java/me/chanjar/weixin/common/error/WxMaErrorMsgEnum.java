@@ -70,11 +70,10 @@ public enum WxMaErrorMsgEnum {
    * appid不正确，或者不符合绑定关系要求.
    * 对应操作：<code>sendUniformMessage</code>
    * 对应地址：
-   * POST https://api.weixin.qq.com/cgi-bin/message/wxopen/template/uniform_send?access_token=ACCESS_TOKEN
-   * 参考文档地址： https://developers.weixin.qq.com/miniprogram/dev/api/open-api/uniform-message/sendUniformMessage.html
+   * 参考文档地址： https://developers.weixin.qq.com/miniprogram/dev/OpenApiDoc/openApi-mgnt/clearQuota.html
    * </pre>
    */
-  CODE_40013(40013, "appid不正确，或者不符合绑定关系要求"),
+  CODE_40013(40013, "appid不正确/不合法(避免异常字符,注意大小写)，或者不符合绑定关系要求"),
   /**
    * <pre>
    * template_id 不正确.
@@ -268,6 +267,50 @@ public enum WxMaErrorMsgEnum {
    */
   CODE_47504(47504, "activity_id 过期"),
   /**
+   * api 禁止清零调用次数，因为清零次数达到上限
+   *
+   * @see <a href="https://developers.weixin.qq.com/miniprogram/dev/OpenApiDoc/openApi-mgnt/clearQuota.html">参考文档</a>
+   */
+  CODE_48006(48006, "api 禁止清零调用次数，因为清零次数达到上限"),
+
+  /**
+   * rid不存在
+   *
+   * @see <a href="https://developers.weixin.qq.com/miniprogram/dev/OpenApiDoc/openApi-mgnt/getRidInfo.html">参考文档</a>
+   */
+  CODE_76001(76001, "rid不存在"),
+  /**
+   * rid为空或者格式错误
+   *
+   * @see <a href="https://developers.weixin.qq.com/miniprogram/dev/OpenApiDoc/openApi-mgnt/getRidInfo.html">参考文档</a>
+   */
+  CODE_76002(76002, "rid为空或者格式错误"),
+  /**
+   * 当前账号无权查询该rid，该rid属于其他账号调用所产生
+   *
+   * @see <a href="https://developers.weixin.qq.com/miniprogram/dev/OpenApiDoc/openApi-mgnt/getRidInfo.html">参考文档</a>
+   */
+  CODE_76003(76003, "当前账号无权查询该rid，该rid属于其他账号调用所产生"),
+  /**
+   * rid过期
+   *
+   * @see <a href="https://developers.weixin.qq.com/miniprogram/dev/OpenApiDoc/openApi-mgnt/getRidInfo.html">参考文档</a>
+   */
+  CODE_76004(76004, "rid过期，仅支持持续7天内的rid"),
+  /**
+   * cgi_path填错了
+   *
+   * @see <a href="https://developers.weixin.qq.com/miniprogram/dev/OpenApiDoc/openApi-mgnt/getApiQuota.html">参考文档</a>
+   */
+  CODE_76021(76021, "cgi_path填错了"),
+  /**
+   * 当前调用接口使用的token与api所属账号不符
+   *
+   * @see <a href="https://developers.weixin.qq.com/miniprogram/dev/OpenApiDoc/openApi-mgnt/getApiQuota.html">参考文档</a>
+   */
+  CODE_76022(76022, "当前调用接口使用的token与api所属账号不符，详情可看注意事项的说明"),
+
+  /**
    * 没有绑定开放平台帐号.
    */
   CODE_89002(89002, "没有绑定开放平台帐号"),
@@ -343,6 +386,17 @@ public enum WxMaErrorMsgEnum {
   CODE_91017(91017, "+号规则 不同类型关联名主体不一致"),
 
   CODE_40097(40097, "参数错误"),
+  /**
+   * 缺少 appid 参数
+   * <a href="https://developers.weixin.qq.com/miniprogram/dev/OpenApiDoc/openApi-mgnt/clearQuotaByAppSecret.html">参考文档</a>
+   */
+  CODE_41002(41002, "缺少 appid 参数"),
+  /**
+   * 缺少 secret 参数
+   * <a href="https://developers.weixin.qq.com/miniprogram/dev/OpenApiDoc/openApi-mgnt/clearQuotaByAppSecret.html">参考文档</a>
+   */
+  CODE_41004(41004, "缺少 secret 参数"),
+
 
   CODE_41006(41006, "media_id 不能为空"),
 
@@ -657,6 +711,132 @@ public enum WxMaErrorMsgEnum {
   CODE_89255(89255, "code参数无效，请检查code长度以及内容是否正确_；注意code_type的值不同需要传的code长度不一样 ；注意code_type的值不同需要传的code长度不一样"),
 
 //  CODE_504002(-504002, "云函数未找到 Function not found"),
+
+  /**
+   * 半屏小程序系统错误
+   */
+  CODE_89408(89408, "半屏小程序系统错误"),
+
+  /**
+   * 获取半屏小程序列表参数错误
+   */
+  CODE_89409(89409, "获取半屏小程序列表参数错误"),
+
+  /**
+   * 添加半屏小程序appid参数错误
+   */
+  CODE_89410(89410, "添加半屏小程序appid参数错误"),
+
+  /**
+   * 添加半屏小程序appid参数为空
+   */
+  CODE_89411(89411, "添加半屏小程序appid参数为空"),
+
+  /**
+   * 添加半屏小程序申请理由不得超过30个字
+   */
+  CODE_89412(89412, "添加半屏小程序申请理由不得超过30个字"),
+
+  /**
+   * 该小程序被申请次数已达24h限制
+   */
+  CODE_89413(89413, "该小程序被申请次数已达24h限制"),
+
+  /**
+   * 每天仅允许申请50次半屏小程序
+   */
+  CODE_89414(89414, "每天仅允许申请50次半屏小程序"),
+
+  /**
+   * 删除半屏小程序appid参数为空
+   */
+  CODE_89415(89415, "删除半屏小程序appid参数为空"),
+
+  /**
+   * 取消半屏小程序授权appid参数为空
+   */
+  CODE_89416(89416, "取消半屏小程序授权appid参数为空"),
+
+  /**
+   * 修改半屏小程序方式flag参数错误
+   */
+  CODE_89417(89417, "修改半屏小程序方式flag参数错误"),
+
+  /**
+   * 获取半屏小程序每日申请次数失败
+   */
+  CODE_89418(89418, "获取半屏小程序每日申请次数失败"),
+
+  /**
+   * 获取半屏小程序每日授权次数失败
+   */
+  CODE_89419(89419, "获取半屏小程序每日授权次数失败"),
+
+  /**
+   * 不支持添加个人主体小程序
+   */
+  CODE_89420(89420, "不支持添加个人主体小程序"),
+
+  /**
+   * 删除数据未找到
+   */
+  CODE_89421(89421, "删除数据未找到"),
+
+  /**
+   * 删除状态异常
+   */
+  CODE_89422(89422, "删除状态异常"),
+
+  /**
+   * 申请次数添加到达上限
+   */
+  CODE_89423(89423, "申请次数添加到达上限"),
+
+  /**
+   * 申请添加已超时
+   */
+  CODE_89425(89425, "申请添加已超时"),
+
+  /**
+   * 申请添加状态异常
+   */
+  CODE_89426(89426, "申请添加状态异常"),
+
+  /**
+   * 申请号和授权号相同
+   */
+  CODE_89427(89427, "申请号和授权号相同"),
+
+  /**
+   * 该小程序已申请，不允许重复添加
+   */
+  CODE_89428(89428, "该小程序已申请，不允许重复添加"),
+
+  /**
+   * 已到达同一小程序每日最多申请次数
+   */
+  CODE_89429(89429, "已到达同一小程序每日最多申请次数"),
+
+  /**
+   * 该小程序已设置自动拒绝申请
+   */
+  CODE_89430(89430, "该小程序已设置自动拒绝申请"),
+
+  /**
+   * 不支持此类型小程序
+   */
+  CODE_89431(89431, "不支持此类型小程序"),
+
+  /**
+   * 不是小程序
+   */
+  CODE_89432(89432, "不是小程序"),
+
+  /**
+   * 授权次数到达上限
+   */
+  CODE_89424(89424, "授权次数到达上限"),
+
   ;
 
   private final int code;

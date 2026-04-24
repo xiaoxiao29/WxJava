@@ -7,7 +7,6 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import lombok.Data;
 import me.chanjar.weixin.common.api.WxErrorExceptionHandler;
 import me.chanjar.weixin.common.api.WxMessageDuplicateChecker;
-import me.chanjar.weixin.common.api.WxMessageInMemoryDuplicateChecker;
 import me.chanjar.weixin.common.api.WxMessageInMemoryDuplicateCheckerSingleton;
 import me.chanjar.weixin.common.session.InternalSession;
 import me.chanjar.weixin.common.session.InternalSessionManager;
@@ -108,7 +107,7 @@ public class WxMaMessageRouter {
   /**
    * 处理微信消息.
    */
-  public WxMaXmlOutMessage route(final WxMaMessage wxMessage, final Map<String, Object> context) {
+  public WxMaOutMessage route(final WxMaMessage wxMessage, final Map<String, Object> context) {
     if (isMsgDuplicated(wxMessage)) {
       // 如果是重复消息，那么就不做处理
       return null;
@@ -125,19 +124,23 @@ public class WxMaMessageRouter {
       }
     }
 
-    if (matchRules.size() == 0) {
+    if (matchRules.isEmpty()) {
       return null;
     }
-    String miniAppId = WxMaConfigHolder.get();
+
     final List<Future<?>> futures = new ArrayList<>();
-    WxMaXmlOutMessage result = null;
+    WxMaOutMessage result = null;
     for (final WxMaMessageRouterRule rule : matchRules) {
       // 返回最后一个非异步的rule的执行结果
       if (rule.isAsync()) {
+        //获取当前线程使用的实际appId，兼容只有一个appId，且未显式设置当前使用的appId的情况
+        String miniAppId = this.wxMaService.getWxMaConfig().getAppid();
         futures.add(
           this.executorService.submit(() -> {
+            //子线程中设置实际的appId
             this.wxMaService.switchoverTo(miniAppId);
             rule.service(wxMessage, context, WxMaMessageRouter.this.wxMaService, WxMaMessageRouter.this.sessionManager, WxMaMessageRouter.this.exceptionHandler);
+            WxMaConfigHolder.remove();
           })
         );
       } else {
@@ -148,7 +151,7 @@ public class WxMaMessageRouter {
       }
     }
 
-    if (futures.size() > 0) {
+    if (!futures.isEmpty()) {
       this.executorService.submit(() -> {
         for (Future<?> future : futures) {
           try {
@@ -165,11 +168,11 @@ public class WxMaMessageRouter {
     return result;
   }
 
-  public WxMaXmlOutMessage route(final WxMaMessage wxMessage) {
+  public WxMaOutMessage route(final WxMaMessage wxMessage) {
     return this.route(wxMessage, new HashMap<>(2));
   }
 
-  private boolean isMsgDuplicated(WxMaMessage wxMessage) {
+  protected boolean isMsgDuplicated(WxMaMessage wxMessage) {
     StringBuilder messageId = new StringBuilder();
     if (wxMessage.getMsgId() == null) {
       messageId.append(wxMessage.getCreateTime())

@@ -3,6 +3,7 @@ package com.binarywang.spring.starter.wxjava.cp.properties;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 import java.io.Serializable;
 
@@ -48,6 +49,12 @@ public class WxCpProperties {
   private String msgAuditLibPath;
 
   /**
+   * 自定义企业微信服务器baseUrl，用于替换默认的 https://qyapi.weixin.qq.com
+   * 例如：http://proxy.company.com:8080
+   */
+  private String baseApiUrl;
+
+  /**
    * 配置存储策略，默认内存
    */
   private ConfigStorage configStorage = new ConfigStorage();
@@ -60,6 +67,17 @@ public class WxCpProperties {
      * 存储类型
      */
     private StorageType type = StorageType.memory;
+
+    /**
+     * 指定key前缀
+     */
+    private String keyPrefix = "wx:cp";
+
+    /**
+     * redis连接配置
+     */
+    @NestedConfigurationProperty
+    private WxCpRedisProperties redis = new WxCpRedisProperties();
 
     /**
      * http代理主机
@@ -104,6 +122,18 @@ public class WxCpProperties {
     /**
      * 内存
      */
-    memory
+    memory,
+    /**
+     * jedis
+     */
+    jedis,
+    /**
+     * redisson
+     */
+    redisson,
+    /**
+     * redistemplate
+     */
+    redistemplate
   }
 }

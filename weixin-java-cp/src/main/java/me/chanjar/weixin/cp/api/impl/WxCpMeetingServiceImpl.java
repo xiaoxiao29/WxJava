@@ -11,7 +11,6 @@ import me.chanjar.weixin.cp.bean.oa.meeting.WxCpUserMeetingIdResult;
 import me.chanjar.weixin.cp.util.json.WxCpGsonBuilder;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import static me.chanjar.weixin.cp.constant.WxCpApiPathConsts.Oa.*;
@@ -65,10 +64,10 @@ public class WxCpMeetingServiceImpl implements WxCpMeetingService {
     if (limit != null) {
       param.put("limit", limit);
     }
-    if (limit != null) {
+    if (beginTime != null) {
       param.put("begin_time", beginTime);
     }
-    if (limit != null) {
+    if (endTime != null) {
       param.put("end_time", endTime);
     }
     final String response = this.cpService.post(this.cpService.getWxCpConfigStorage().getApiUrl(GET_USER_MEETING_ID),
