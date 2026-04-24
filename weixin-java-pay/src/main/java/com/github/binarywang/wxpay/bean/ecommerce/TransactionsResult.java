@@ -65,6 +65,10 @@ public class TransactionsResult implements Serializable {
     private String appId;
     private String timeStamp;
     private String nonceStr;
+    /**
+     * 由于package为java保留关键字，因此改为packageValue，序列化时会自动转换为package字段名
+     */
+    @SerializedName("package")
     private String packageValue;
     private String signType;
     private String paySign;
@@ -80,10 +84,18 @@ public class TransactionsResult implements Serializable {
     private String appid;
     private String partnerid;
     private String prepayid;
+    /**
+     * 由于package为java保留关键字，因此改为packageValue，序列化时会自动转换为package字段名
+     */
+    @SerializedName("package")
     private String packageValue;
     private String noncestr;
     private String timestamp;
+    private String sign;
 
+    private String getSignStr() {
+      return String.format("%s\n%s\n%s\n%s\n", appid, timestamp, noncestr, prepayid);
+    }
   }
 
   public <T> T getPayInfo(TradeTypeEnum tradeType, String appId, String mchId, PrivateKey privateKey) {
@@ -104,7 +116,7 @@ public class TransactionsResult implements Serializable {
         appResult.setAppid(appId).setPrepayid(this.prepayId).setPartnerid(mchId)
           .setNoncestr(nonceStr).setTimestamp(timestamp)
           //暂填写固定值Sign=WXPay
-          .setPackageValue("Sign=WXPay");
+          .setPackageValue("Sign=WXPay").setSign(SignUtils.sign(appResult.getSignStr(), privateKey));
         return (T) appResult;
       case NATIVE:
         return (T) this.codeUrl;

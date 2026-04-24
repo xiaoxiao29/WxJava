@@ -9,6 +9,7 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.google.gson.reflect.TypeToken;
 import lombok.RequiredArgsConstructor;
 import me.chanjar.weixin.common.error.WxErrorException;
 import me.chanjar.weixin.common.util.json.GsonHelper;
@@ -80,7 +81,7 @@ public class WxMaLiveGoodsServiceImpl implements WxMaLiveGoodsService {
     String responseContent = wxMaService.get(GET_APPROVED_GOODS, Joiner.on("&").withKeyValueSeparator("=").join(params));
     JsonObject jsonObject = GsonParser.parse(responseContent);
     JsonArray goodsArr = jsonObject.getAsJsonArray("goods");
-    if (goodsArr.size() > 0) {
+    if (!goodsArr.isEmpty()) {
       for (int i = 0; i < goodsArr.size(); i++) {
         // 接口返回key是驼峰
         JsonObject goods = (JsonObject) goodsArr.get(i);
@@ -92,6 +93,28 @@ public class WxMaLiveGoodsServiceImpl implements WxMaLiveGoodsService {
       }
     }
     return WxMaLiveResult.fromJson(jsonObject.toString());
+  }
+
+  @Override
+  public boolean setKey(List<String> goodsKey) throws WxErrorException {
+    Map<String, Object> map = new HashMap<>(1);
+    map.put("goodsKey", goodsKey);
+    this.wxMaService.post(SET_KEY, WxMaGsonBuilder.create().toJson(map));
+    return true;
+  }
+
+  @Override
+  public List<String> getKey() throws WxErrorException {
+    String responseContent = this.wxMaService.get(GET_KEY, null);
+    JsonObject jsonObject = GsonParser.parse(responseContent);
+    boolean vendorGoodsKey = jsonObject.has("vendorGoodsKey");
+    if (vendorGoodsKey) {
+      return WxMaGsonBuilder.create().fromJson(jsonObject.getAsJsonArray("vendorGoodsKey"),
+              new TypeToken<List<String>>() {
+              }.getType());
+    } else {
+      return null;
+    }
   }
 
 }

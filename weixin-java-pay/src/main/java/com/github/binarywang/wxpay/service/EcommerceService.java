@@ -6,6 +6,8 @@ import com.github.binarywang.wxpay.bean.ecommerce.enums.SpAccountTypeEnum;
 import com.github.binarywang.wxpay.bean.ecommerce.enums.TradeTypeEnum;
 import com.github.binarywang.wxpay.exception.WxPayException;
 
+import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 
 /**
@@ -15,14 +17,14 @@ import java.io.InputStream;
  * </pre>
  *
  * @author cloudX
- * @date 2020 /08/17
+ * created on  2020 /08/17
  */
 public interface EcommerceService {
   /**
    * <pre>
    * 二级商户进件API
    * 接口地址: https://api.mch.weixin.qq.com/v3/ecommerce/applyments/
-   * 文档地址: https://pay.weixin.qq.com/wiki/doc/apiv3/wxpay/ecommerce/applyments/chapter3_1.shtml
+   * 文档地址: https://pay.weixin.qq.com/wiki/doc/apiv3_partner/apis/chapter7_1_8.shtml
    *
    * </pre>
    *
@@ -217,6 +219,19 @@ public interface EcommerceService {
 
   /**
    * <pre>
+   * 二级商户号账户实时余额
+   * 文档地址: https://pay.weixin.qq.com/wiki/doc/apiv3_partner/Offline/apis/chapter4_3_11.shtml
+   * </pre>
+   *
+   * @param subMchid 二级商户号
+   * @param accountType 账户类型
+   * @return 返回数据 fund balance result
+   * @throws WxPayException the wx pay exception
+   */
+  FundBalanceResult subNowBalance(String subMchid, SpAccountTypeEnum accountType) throws WxPayException;
+
+  /**
+   * <pre>
    * 二级商户号账户日终余额
    * 文档地址: https://pay.weixin.qq.com/wiki/doc/apiv3/wxpay/pages/amount.shtml
    * </pre>
@@ -251,6 +266,18 @@ public interface EcommerceService {
    * @throws WxPayException the wx pay exception
    */
   ProfitSharingResult queryProfitSharing(ProfitSharingQueryRequest request) throws WxPayException;
+
+  /**
+   * <pre>
+   * 查询订单剩余待分金额API
+   * 文档地址: https://pay.weixin.qq.com/wiki/doc/apiv3_partner/apis/chapter7_4_9.shtml
+   * </pre>
+   *
+   * @param request 查询订单剩余待分金额请求
+   * @return 返回数据 profit sharing UnSplitAmount result
+   * @throws WxPayException the wx pay exception
+   */
+  ProfitSharingOrdersUnSplitAmountResult queryProfitSharingOrdersUnsplitAmount(ProfitSharingOrdersUnSplitAmountRequest request) throws WxPayException;
 
   /**
    * <pre>
@@ -337,6 +364,33 @@ public interface EcommerceService {
    */
   RefundQueryResult queryRefundByRefundId(String subMchid, String refundId) throws WxPayException;
 
+
+  /**
+   * <pre>
+   * 垫付退款回补API
+   * 文档地址: https://pay.weixin.qq.com/wiki/doc/apiv3_partner/apis/chapter7_6_4.shtml
+   * </pre>
+   *
+   * @param subMchid 二级商户号
+   * @param refundId 微信退款单号
+   * @return 返回数据 return refunds result
+   * @throws WxPayException the wx pay exception
+   */
+  ReturnAdvanceResult refundsReturnAdvance(String subMchid, String refundId) throws WxPayException;
+
+
+  /**
+   * <pre>
+   * 查询垫付回补结果API
+   * 文档地址: https://pay.weixin.qq.com/wiki/doc/apiv3_partner/apis/chapter7_6_5.shtml
+   * </pre>
+   *
+   * @param subMchid 二级商户号
+   * @param refundId 微信退款单号
+   * @return 返回数据 return refunds result
+   * @throws WxPayException the wx pay exception
+   */
+  ReturnAdvanceResult queryRefundsReturnAdvance(String subMchid, String refundId) throws WxPayException;
   /**
    * <pre>
    * 查询退款API
@@ -365,8 +419,21 @@ public interface EcommerceService {
 
   /**
    * <pre>
+   * 提现状态变更通知回调数据处理
+   * 文档地址: https://pay.weixin.qq.com/doc/v3/partner/4013049135
+   * </pre>
+   *
+   * @param notifyData 通知数据
+   * @param header     通知头部数据，不传则表示不校验头
+   * @return 解密后通知数据 withdraw notify result
+   * @throws WxPayException the wx pay exception
+   */
+  WithdrawNotifyResult parseWithdrawNotifyResult(String notifyData, SignatureHeader header) throws WxPayException;
+
+  /**
+   * <pre>
    * 二级商户账户余额提现API
-   * 文档地址: https://pay.weixin.qq.com/wiki/doc/apiv3/wxpay/ecommerce/fund/chapter3_2.shtml
+   * 文档地址: https://pay.weixin.qq.com/doc/v3/partner/4012476652
    * </pre>
    *
    * @param request 提现请求
@@ -378,7 +445,7 @@ public interface EcommerceService {
   /**
    * <pre>
    * 电商平台提现API
-   * 文档地址: https://pay.weixin.qq.com/wiki/doc/apiv3/wxpay/ecommerce/fund/chapter3_5.shtml
+   * 文档地址: https://pay.weixin.qq.com/doc/v3/partner/4012476670
    * </pre>
    *
    * @param request 提现请求
@@ -414,12 +481,49 @@ public interface EcommerceService {
 
   /**
    * <pre>
-   * 修改结算帐号API
+   * 平台查询预约提现状态（根据微信支付预约提现单号查询）
+   * 文档地址: https://pay.weixin.qq.com/doc/v3/partner/4012476674
+   * </pre>
+   *
+   * @param withdrawId 微信支付提现单号
+   * @return 返回数据 return sp withdraw status result
+   * @throws WxPayException the wx pay exception
+   */
+  SpWithdrawStatusResult querySpWithdrawByWithdrawId(String withdrawId) throws WxPayException;
+
+  /**
+   * <pre>
+   * 二级商户按日终余额预约提现
+   * 文档地址: https://pay.weixin.qq.com/doc/v3/partner/4013328143
+   * </pre>
+   *
+   * @param request 提现请求
+   * @return 返回数据 return day-end balance withdraw result
+   * @throws WxPayException the wx pay exception
+   */
+  SubDayEndBalanceWithdrawResult subDayEndBalanceWithdraw(SubDayEndBalanceWithdrawRequest request) throws WxPayException;
+
+  /**
+   * <pre>
+   * 查询二级商户按日终余额预约提现状态
+   * 文档地址: https://pay.weixin.qq.com/doc/v3/partner/4013328163
+   * </pre>
+   *
+   * @param subMchid 二级商户号
+   * @param outRequestNo 商户提现单号
+   * @return 返回数据 return day-end balance withdraw status result
+   * @throws WxPayException the wx pay exception
+   */
+  SubDayEndBalanceWithdrawStatusResult querySubDayEndBalanceWithdraw(String subMchid, String outRequestNo) throws WxPayException;
+
+  /**
+   * <pre>
+   * 修改结算账号API
    * 文档地址: https://pay.weixin.qq.com/wiki/doc/apiv3/wxpay/ecommerce/applyments/chapter3_4.shtml
    * </pre>
    *
    * @param subMchid 二级商户号。
-   * @param request 结算帐号
+   * @param request 结算账号
    * @throws WxPayException the wx pay exception
    */
   void modifySettlement(String subMchid, SettlementRequest request) throws WxPayException;
@@ -473,4 +577,76 @@ public interface EcommerceService {
    */
   InputStream downloadBill(String url) throws WxPayException;
 
+
+  /**
+   * <pre>
+   * 请求补差API
+   * 文档地址: https://pay.weixin.qq.com/wiki/doc/apiv3_partner/apis/chapter7_5_1.shtml
+   * </pre>
+   *
+   * @param subsidiesCreateRequest 请求补差。
+   * @return 返回数据 return SubsidiesCreateResult
+   * @throws WxPayException the wx pay exception
+   */
+  SubsidiesCreateResult subsidiesCreate(SubsidiesCreateRequest subsidiesCreateRequest) throws WxPayException;
+
+  /**
+   * <pre>
+   * 请求补差回退API
+   * 文档地址: https://pay.weixin.qq.com/wiki/doc/apiv3_partner/apis/chapter7_5_2.shtml
+   * </pre>
+   *
+   * @param subsidiesReturnRequest 请求补差。
+   * @return 返回数据 return SubsidiesReturnResult
+   * @throws WxPayException the wx pay exception
+   */
+  SubsidiesReturnResult subsidiesReturn(SubsidiesReturnRequest subsidiesReturnRequest) throws WxPayException;
+
+  /**
+   * <pre>
+   * 取消补差API
+   * 文档地址: https://pay.weixin.qq.com/wiki/doc/apiv3_partner/apis/chapter7_5_3.shtml
+   * </pre>
+   *
+   * @param subsidiesCancelRequest 请求补差。
+   * @return 返回数据 return SubsidiesCancelResult
+   * @throws WxPayException the wx pay exception
+   */
+  SubsidiesCancelResult subsidiesCancel(SubsidiesCancelRequest subsidiesCancelRequest) throws WxPayException;
+
+  /**
+   * <pre>
+   * 提交注销申请单
+   * 文档地址: https://pay.weixin.qq.com/docs/partner/apis/ecommerce-cancel/cancel-applications/create-cancel-application.html
+   * </pre>
+   *
+   * @param accountCancelApplicationsRequest 提交注销申请单
+   * @return 返回数据 return AccountCancelApplicationsResult
+   * @throws WxPayException the wx pay exception
+   */
+  AccountCancelApplicationsResult createdAccountCancelApplication(AccountCancelApplicationsRequest accountCancelApplicationsRequest) throws WxPayException;
+
+  /**
+   * <pre>
+   * 查询注销单状态
+   * 文档地址: https://pay.weixin.qq.com/docs/partner/apis/ecommerce-cancel/cancel-applications/get-cancel-application.html
+   * </pre>
+   *
+   * @param outApplyNo 注销申请单号
+   * @return 返回数据 return AccountCancelApplicationsResult
+   * @throws WxPayException the wx pay exception
+   */
+  AccountCancelApplicationsResult getAccountCancelApplication(String outApplyNo) throws WxPayException;
+
+  /**
+   * <pre>
+   * 注销单资料图片上传
+   * 文档地址: https://pay.weixin.qq.com/docs/partner/apis/ecommerce-cancel/media/upload-media.html
+   * </pre>
+   *
+   * @param imageFile 图片
+   * @return 返回数据 return AccountCancelApplicationsResult
+   * @throws WxPayException the wx pay exception
+   */
+  AccountCancelApplicationsMediaResult uploadMediaAccountCancelApplication(File imageFile) throws WxPayException, IOException;;
 }

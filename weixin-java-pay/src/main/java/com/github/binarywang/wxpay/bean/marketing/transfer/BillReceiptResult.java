@@ -15,12 +15,12 @@ import java.io.Serializable;
  * 请求方式：POST
  *
  * @author xiaoqiang
- * @date 2021-12-06
+ * created on  2021-12-06
  */
 @Data
 @NoArgsConstructor
 public class BillReceiptResult implements Serializable {
-  public static final float serialVersionUID = 1L;
+  private static final long serialVersionUID = 1L;
 
   @Override
   public String toString() {
